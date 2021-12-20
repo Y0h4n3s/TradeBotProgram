@@ -1,0 +1,30 @@
+{
+  "name": "dutch-auctions",
+  "version": "0.1",
+  "description": "Contracts",
+  "main": "index.js",
+  "license": "",
+  "private": true,
+  "scripts": {
+    "test:program": "node ./programs/dutch-auction/tests/createAuction.js",
+    "build:program": "cargo build-bpf --manifest-path=./Cargo.toml --bpf-out-dir ./dist/",
+    "build:deployProgram": "yarn run build:program && solana program deploy ./dist/trade_bot.so --program-id ./program.json"
+  },
+  "devDependencies": {
+    "bn.js": "^5.2.0",
+    "dotenv": "^10.0.0",
+    "ts-node": "10.2.1",
+    "typescript": "4.4.2"
+  },
+  "dependencies": {
+    "@project-serum/common": "^0.0.1-beta.3",
+    "@project-serum/serum": "^0.13.61",
+    "@solana/spl-token": "^0.1.8",
+    "@solana/web3.js": "^1.26.0",
+    "asciichart": "^1.5.25",
+    "base58-js": "^1.0.0",
+    "borsh": "^0.6.0",
+    "buffer-layout": "^1.2.2",
+    "md5": "^2.3.0"
+  }
+}
