@@ -18,6 +18,7 @@ use {
 use crate::error::TradeBotResult;
 use crate::instruction::MarketStatus;
 
+pub const TRADE_MARKET_STATE_SPAN: u64 = 129;
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
 pub struct TradeMarketState {
     pub serum_market_address: Pubkey,
@@ -81,6 +82,7 @@ pub struct TraderState {
     pub status: TraderStatus
 }
 
+pub const TRADER_SPAN: u64 = 297;
 
 
 
