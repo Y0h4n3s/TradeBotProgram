@@ -1,54 +1,52 @@
-use thiserror::Error;
 use num_enum::{FromPrimitive, IntoPrimitive};
 use solana_program::program_error::ProgramError;
+use thiserror::Error;
 
-pub type TradeBotResult<T>  = Result<T, TradeBotError>;
+pub type TradeBotResult<T> = Result<T, TradeBotErrors>;
 
-#[derive(Error,Debug, PartialEq, Eq)]
+#[derive( Debug, PartialEq, Eq)]
 pub enum TradeBotError {
+    Errors(TradeBotErrors),
 
-
-    #[error("0:?")]
-    Errors(#[from] TradeBotErrors),
-
-
-    #[error(transparent)]
     ProgramError(ProgramError),
 
-
 }
 
-#[derive(Debug, IntoPrimitive, FromPrimitive, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum TradeBotErrors {
+    #[error("Instruction Is not known by the program(a.k.a me)")]
     UnknownInstruction,
+    #[error("Instruction data is invalid")]
     InvalidInstruction,
+    #[error("The market address is already saved")]
     MarketAlreadyInitialized,
+    #[error("The provided market is not initialized")]
     MarketNotKnown,
-    #[num_enum(default)]
-    UnknownError
+    #[error("You are not authorized to perform this action")]
+    Unauthorized,
+    #[error("Trader already exists")]
+    TraderExists,
+    #[error("Not enough tokens")]
+    InsufficientTokens,
+    #[error("Program Error")]
+    ProgramErr(ProgramError),
+    #[error("Unknown error")]
+    UnknownError,
+
+
 }
 
 
-impl std::convert::From<TradeBotError> for ProgramError {
-    fn from(e: TradeBotError) -> ProgramError {
-        match e {
-            TradeBotError::ProgramError(e) => e,
-            TradeBotError::Errors(c) => ProgramError::Custom(c.into()),
-        }
+
+impl From<TradeBotErrors> for ProgramError {
+    fn from(e: TradeBotErrors) -> ProgramError {
+        ProgramError::Custom(1)
     }
 }
 
-impl From<ProgramError> for TradeBotError {
+impl From<ProgramError> for TradeBotErrors {
     fn from(err: ProgramError) -> Self {
-        TradeBotError::ProgramError(err)
+        TradeBotErrors::ProgramErr(err)
     }
 }
 
-impl std::fmt::Display for TradeBotErrors {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        <Self as std::fmt::Debug>::fmt(self, fmt)
-    }
-}
-
-impl std::error::Error for TradeBotErrors {}

@@ -13,9 +13,10 @@ const base58 = require("base58-js")
 const programId = new PublicKey(process.env.PROGRAM_ID);
 const {Token, AccountLayout} = require("@solana/spl-token");
 const {binary_to_base58} = require("base58-js");
-const {TradeMarketState, CloseTradeMarket, Trader, Trade} = require("./layouts");
+const {TradeMarketState, CloseTradeMarket, Trader} = require("./layouts");
 const {Market, OpenOrders} = require("@project-serum/serum");
-const BN = require("bn.js");
+const web3_js_1 = require("@solana/web3.js");
+const buffer_1 = require("buffer");
 
 (async function () {
     const connection = new Connection("https://api.devnet.solana.com");
@@ -50,54 +51,42 @@ const BN = require("bn.js");
 
 
     let sermarket = await Market.load(connection, marketAddress, {}, serumProgramId)
-    let myOrders = await sermarket.loadOrdersForOwner(connection, decodedTrader.marketSigner, 200000000000000000000);
-    let decodedMarket = sermarket.decoded
-    let bids = await sermarket.loadBids(connection);
-    let asks = await sermarket.loadAsks(connection);
+    let marketState = await connection.getAccountInfo(decodedTrader.marketState);
+    let decodedMarketState = TradeMarketState.decode(marketState.data, 0)
 
-    let sellPrice = sermarket.priceNumberToLots(Number(asks.getL2(1)[0][0].toFixed(5)) + 1)
-    let buyPrice = sermarket.priceNumberToLots(Number(bids.getL2(1)[0][0]).toFixed(5) - 1)
-    const data = {
-        buyPrice,
-        sellPrice,
-        sizeBase: sermarket.baseSizeNumberToLots(500),
-        sizeQuote: new BN(sermarket.decoded.quoteLotSize).mul(sermarket.baseSizeNumberToLots(500)).mul(buyPrice),
-        clientOrderId: new BN(1234256),
+    const vaultSigner = await PublicKey.createProgramAddress([
+        sermarket.address.toBuffer(),
+        sermarket.decoded.vaultSignerNonce.toArrayLike(Buffer, 'le', 8),
+    ], serumProgramId);
 
-    }
-    console.log(myOrders)
-    let tx_ix = Buffer.alloc(Trade.span)
-    Trade.encode(data, tx_ix)
-    console.log(tx_ix)
-    let triggerTradeIx = new TransactionInstruction({
-        data: tx_ix,
+    let settleIx = new TransactionInstruction({
+        data: Buffer.alloc(80),
         keys: [
+            {pubkey: trader.pubkey, isSigner: false, isWritable: true},
+            {pubkey: marketAddress, isSigner: false, isWritable: true},
+            {pubkey: decodedTrader.serumOpenOrders, isSigner: false, isWritable: true},
+            {pubkey: decodedTrader.marketSigner, isSigner: false, isWritable: true},
+            {pubkey: sermarket.decoded.baseVault, isSigner: false, isWritable: true},
+            {pubkey: sermarket.decoded.quoteVault, isSigner: false, isWritable: true},
             {pubkey: decodedTrader.baseMarketWallet, isSigner: false, isWritable: true},
             {pubkey: decodedTrader.quoteMarketWallet, isSigner: false, isWritable: true},
-            {pubkey: decodedTrader.marketSigner, isSigner: false, isWritable: true},
-            {pubkey: marketAddress, isSigner: false, isWritable: true},
-            {pubkey: decodedMarket.requestQueue, isSigner: false, isWritable: true},
-            {pubkey: decodedMarket.eventQueue, isSigner: false, isWritable: true},
-            {pubkey: decodedMarket.bids, isSigner: false, isWritable: true},
-            {pubkey: decodedMarket.asks, isSigner: false, isWritable: true},
-            {pubkey: decodedMarket.baseVault, isSigner: false, isWritable: true},
-            {pubkey: decodedMarket.quoteVault, isSigner: false, isWritable: true},
-            {pubkey: trader.pubkey, isSigner: false, isWritable: true},
-            {pubkey: decodedTrader.serumOpenOrders, isSigner: false, isWritable: true},
-            {pubkey: tokenProgramId, isSigner: false, isWritable: false},
+            {pubkey: vaultSigner, isSigner: false, isWritable: true},
             {pubkey: serumProgramId, isSigner: false, isWritable: false},
+            {pubkey: tokenProgramId, isSigner: false, isWritable: false},
             {pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false}
         ],
         programId: programId
 
     })
 
-    tx.add(triggerTradeIx)
+
+    tx.add(settleIx)
 
     console.log("Processing Transaction...")
-    let result = await sendAndConfirmTransaction(connection, tx, [payer])
-    console.log("Result signature: ", result)
-    await printProgramLogsForSignature(connection, result)
+    sendAndConfirmTransaction(connection, tx, [payer]).then(async sig => {
+        console.log("accounts created: ", sig)
+        await printProgramLogsForSignature(connection, sig)
 
+    }).catch(console.error)
 
 })()

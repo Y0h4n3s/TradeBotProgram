@@ -1,3 +1,8 @@
+use std::error::Error;
+
+use anchor_lang::__private::bytemuck::{Pod, Zeroable};
+use serum_dex::critbit::Slab;
+use serum_dex::matching::Side;
 
 use {
     borsh::{BorshDeserialize, BorshSerialize},
@@ -9,41 +14,24 @@ use {
         pubkey::Pubkey,
     },
 };
+
 use crate::error::TradeBotResult;
 use crate::instruction::MarketStatus;
-use anchor_lang::__private::bytemuck::{Pod, Zeroable};
-use serum_dex::matching::Side;
-use serum_dex::critbit::Slab;
-use std::error::Error;
 
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
 pub struct TradeMarketState {
-    pub address: Pubkey,
+    pub serum_market_address: Pubkey,
     pub base_mint: Pubkey,
-    pub base_market_wallet: Pubkey,
     pub quote_mint: Pubkey,
-    pub quote_market_wallet: Pubkey,
-    pub base_owner_account: Pubkey,
-    pub quote_owner_account: Pubkey,
-    pub market_signer: Pubkey,
-    pub market_state: Pubkey,
     pub owner: Pubkey,
-    pub open_orders: Pubkey,
-    pub serum_open_orders: Pubkey,
-    pub trade_profit: u64,
-    pub stopping_price: u64,
-    pub starting_price_buy: u64,
-    pub starting_price_sell: u64,
-    pub simultaneous_open_positions: u64,
-    pub starting_base_balance: u64,
-    pub starting_quote_balance: u64,
-    pub starting_value: u64,
-    pub status: MarketStatus
+    pub status: MarketStatus,
 }
+
+
 impl Sealed for TradeMarketState {}
 
 impl Pack for TradeMarketState {
-    const LEN: usize = 449;
+    const LEN: usize = 129;
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
         self.serialize(&mut slice).unwrap()
@@ -66,24 +54,40 @@ impl IsInitialized for TradeMarketState {
 
 
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
-pub struct OpenOrders {
+pub enum TraderStatus {
+    Registered,
+    Initialized,
+    Decommissioned
+}
+
+#[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
+pub struct TraderState {
+    pub market_address: Pubkey,
+    pub base_market_wallet: Pubkey,
+    pub quote_market_wallet: Pubkey,
+    pub serum_open_orders: Pubkey,
+    pub market_signer: Pubkey,
     pub market_state: Pubkey,
     pub owner: Pubkey,
-    pub orders: [u128; 65],
+    pub min_trade_profit: f64,
+    pub stopping_price: f64,
+    pub starting_price_buy: f64,
+    pub starting_price_sell: f64,
+    pub simultaneous_open_positions: u64,
+    pub starting_base_balance: u64,
+    pub starting_quote_balance: u64,
+    pub starting_value: f64,
+    pub total_txs: u64,
+    pub status: TraderStatus
 }
 
-impl Copy for OpenOrders {}
 
-impl IsInitialized for OpenOrders {
-    fn is_initialized(&self) -> bool {
-        true
-    }
 
-}
-impl Sealed for OpenOrders {}
 
-impl Pack for OpenOrders {
-    const LEN: usize = 1104;
+impl Sealed for TraderState {}
+
+impl Pack for TraderState {
+    const LEN: usize = 297;
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
         self.serialize(&mut slice).unwrap()
@@ -91,25 +95,18 @@ impl Pack for OpenOrders {
 
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
         let mut p = src;
-        OpenOrders::deserialize(&mut p).map_err(|_| {
+        TraderState::deserialize(&mut p).map_err(|_| {
             msg!("Failed to deserialize name record");
             ProgramError::InvalidAccountData
         })
     }
 }
 
-#[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
-pub struct SerumOrderBook {
-    pub side: Side,
-    pub slab: Slab
-
-}
-impl SerumOrderBook {
-    pub fn items(&self, descending: boolean) -> Result<(), Error> {
-        if (self.slab)
-
-        Ok(())
+impl IsInitialized for TraderState {
+    fn is_initialized(&self) -> bool {
+        true
     }
 }
+
 
 

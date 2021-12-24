@@ -12,11 +12,11 @@ const md5 = require("md5")
 const base58 = require("base58-js")
 const programId = new PublicKey(process.env.PROGRAM_ID);
 const {Token, AccountLayout} = require("@solana/spl-token");
-const {InitializeTradeMarket, TradeMarketState} = require("./layouts");
+const {InitializeTradeMarket, TradeMarketState, RegisterTrader, Trader} = require("./layouts");
 const {binary_to_base58} = require("base58-js");
 const BN = require("bn.js");
 const serum = require("@project-serum/serum");
-const {OpenOrders, DexInstructions} = require("@project-serum/serum");
+const {OpenOrders, DexInstructions, Market} = require("@project-serum/serum");
 (async function () {
     const connection = new Connection("https://api.devnet.solana.com");
     let payer = await initializeLocalPayer(connection);
@@ -26,26 +26,30 @@ const {OpenOrders, DexInstructions} = require("@project-serum/serum");
 
 
 
+    let serumMarkets = await connection.getProgramAccounts(programId, {filters: [
+            {dataSize: 129},
+            {memcmp: {
+                    offset: 0,bytes: "BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E"
+                }}
+        ]})
 
+    let market = serumMarkets[0]
+    let decodedMarket = TradeMarketState.decode(market.account.data, 0);
+    console.log(decodedMarket)
+    const data = {
+        registerDate: new BN(new Date().getTime() / 1000)
+    }
+    let tx_data = Buffer.alloc(8)
+    RegisterTrader.encode(data, tx_data)
+    let traderWallet = new Keypair()
 
-
-    let market = new PublicKey("BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E")
-
-    let tx_data = Buffer.alloc(0)
-
-    let baseToken = new PublicKey("EdnAnrrvnS42MZNrj4wpDqE6XAJMg3sADPEcqgyAzJ9H")
-    let quoteToken = new PublicKey("J4TYCGMWfEUJCg3PmYn6KTjksai6cv45JP3AitYxpRY5")
-
-    //let [marketAccount, seed] = await PublicKey.findProgramAddress([my_seed], programId)
-    //console.log(my_seed, seed)
-    let marketAccount = new Keypair()
-    let createMarketAccountIx = SystemProgram.createAccount({
-        space: TradeMarketState.span,
+    let createTraderAccountIx = SystemProgram.createAccount({
+        space: Trader.span,
         lamports: await connection.getMinimumBalanceForRentExemption(
-            TradeMarketState.span
+            Trader.span
         ),
         fromPubkey: payer.publicKey,
-        newAccountPubkey: marketAccount.publicKey,
+        newAccountPubkey: traderWallet.publicKey,
         programId: programId
     })
 
@@ -56,44 +60,29 @@ const {OpenOrders, DexInstructions} = require("@project-serum/serum");
             isSigner: true,
             isWritable: true
         }, {
-            pubkey: marketAccount.publicKey,
+            pubkey: market.pubkey,
             isSigner: false,
             isWritable: true
         }, {
-            pubkey: baseToken,
-            isSigner: false,
-            isWritable: true
-        }, {
-            pubkey: quoteToken,
+            pubkey: traderWallet.publicKey,
             isSigner: false,
             isWritable: true
         },
-            {
-             pubkey: market,
-             isSigner: false,
-             isWritable: true
-            }],
+        ],
         programId
     })
+    tx.add(createTraderAccountIx)
 
-    tx.add(createMarketAccountIx)
     tx.add(tx_ix)
 
     tx.recentBlockhash = (await connection.getRecentBlockhash()).blockhash
 
 
     console.log("Processing Transaction...")
-    sendAndConfirmTransaction(connection, tx, [payer, marketAccount]).then(async sig => {
+    sendAndConfirmTransaction(connection, tx, [payer, traderWallet]).then(async sig => {
         console.log("accounts created: ", sig)
         await printProgramLogsForSignature(connection, sig)
 
     })
 
-
-
-
 })()
-
-
-
-

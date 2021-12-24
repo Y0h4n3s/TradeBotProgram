@@ -47,8 +47,8 @@ class PublicKeyLayout extends bufferLayout.Layout {
 
 class U64 extends bufferLayout.Layout {
 
-    constructor(property) {
-        super(8, property)
+    constructor(property, span=8) {
+        super(span, property)
     }
 
     getSpan(b, offset) {
@@ -77,31 +77,26 @@ class U64 extends bufferLayout.Layout {
         if ((offset + this.span) > b.length) {
             throw new RangeError('encoding overruns Buffer');
         }
-        return b.write(src.toString("hex"), offset, "hex")
+        let bu = src.toArrayLike(Buffer, "le", 8)
+        for (let i = 0; i < bu.length; i++) {
+            b[i + offset] = bu[i]
+        }
+
+        return this.span
+    }
+}
+
+class U128 extends U64 {
+    constructor(property) {
+        super(property, 16)
     }
 }
 
 const TradeMarketState = bufferLayout.struct([
     new PublicKeyLayout( "address"),
     new PublicKeyLayout("baseMint"),
-    new PublicKeyLayout("baseMarketWallet"),
     new PublicKeyLayout("quoteMint"),
-    new PublicKeyLayout("quoteMarketWallet"),
-    new PublicKeyLayout("baseOwnerAccount"),
-    new PublicKeyLayout("quoteOwnerAccount"),
-    new PublicKeyLayout("marketSigner"),
-    new PublicKeyLayout("marketState"),
     new PublicKeyLayout("owner"),
-    new PublicKeyLayout("openOrdersAccount"),
-    new PublicKeyLayout("serumOpenOrdersAccount"),
-    new U64("tradeProfit"),
-    new U64("stoppingPrice"),
-    new U64("startingPriceBuy"),
-    new U64("startingPriceSell"),
-    new U64("simultaneousOpenPositions"),
-    new U64("startingBaseBalance"),
-    new U64("startingQuoteBalance"),
-    new U64("startingValue"),
     bufferLayout.u8("status")
 ])
 
@@ -109,22 +104,51 @@ const CloseTradeMarket = bufferLayout.struct([
     new PublicKeyLayout("marketState")
 ])
 
-const InitializeTradeMarket = bufferLayout.struct([
-    new PublicKeyLayout("address"),
-    new U64("tradeProfit"),
-    new U64("stoppingPrice"),
-    new U64("startingPriceBuy"),
-    new U64("startingPriceSell"),
+const RegisterTrader = bufferLayout.struct([
+    new U64("registerDate")
+])
+
+const InitializeTrader = bufferLayout.struct([
+    new bufferLayout.Double("tradeProfit"),
+    new bufferLayout.Double("stoppingPrice"),
+    new bufferLayout.Double("startingPriceBuy"),
+    new bufferLayout.Double("startingPriceSell"),
     new U64("simultaneousOpenPositions"),
-    bufferLayout.u8("status"),
     new U64("startingBaseBalance"),
     new U64("startingQuoteBalance"),
-    new U64("startingValue"),
+    new bufferLayout.Double("startingValue"),
+    new U64("serumOpenOrdersRent"),
 ])
 
 const Trade = bufferLayout.struct([
-    new U64("sellPrice"),
-    new U64("buyPrice")
+    new U128("buyPrice"),
+    new U128("sellPrice"),
+    new U128("sizeBase"),
+    new U128("sizeQuote"),
+    new U128("clientOrderId"),
+    bufferLayout.blob(65, "_padding")
+
+
 ])
 
-module.exports = {TradeMarketState, CloseTradeMarket, InitializeTradeMarket}
+const Trader = bufferLayout.struct([
+    new PublicKeyLayout("marketAddress"),
+    new PublicKeyLayout("baseMarketWallet"),
+    new PublicKeyLayout("quoteMarketWallet"),
+    new PublicKeyLayout("serumOpenOrders"),
+    new PublicKeyLayout("marketSigner"),
+    new PublicKeyLayout("marketState"),
+    new PublicKeyLayout("owner"),
+    new bufferLayout.Double("tradeProfit"),
+    new bufferLayout.Double("stoppingPrice"),
+    new bufferLayout.Double("startingPriceBuy"),
+    new bufferLayout.Double("startingPriceSell"),
+    new U64("simultaneousOpenPositions"),
+    new U64("startingBaseBalance"),
+    new U64("startingQuoteBalance"),
+    new bufferLayout.Double("startingValue"),
+    new U64("totalTxs"),
+    bufferLayout.u8("status")
+])
+
+module.exports = {TradeMarketState, CloseTradeMarket, InitializeTrader, RegisterTrader, Trader, Trade}
