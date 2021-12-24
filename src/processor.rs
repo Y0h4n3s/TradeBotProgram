@@ -312,7 +312,6 @@ impl Processor {
             limit: 0,
         };
 
-        serum_dex::state::s
 
         msg!("");
         let new_order_buy_ix = serum_dex::instruction::NewOrderInstructionV3 {
