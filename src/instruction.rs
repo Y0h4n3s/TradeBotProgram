@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use anchor_lang::AnchorDeserialize;
+use anchor_lang::{AnchorDeserialize, AnchorSerialize};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::msg;
 use solana_program::pubkey::Pubkey;
@@ -72,12 +72,22 @@ pub struct Settle {
     pub _padding: [u64; 10]
 }
 
-pub trait TradeBotInstruction<T: AnchorDeserialize  + Debug> {
+pub trait TradeBotInstruction<T: AnchorSerialize + AnchorDeserialize  + Debug > {
 
     fn unpack(data: &[u8]) -> TradeBotResult<Box<T>> {
         match T::try_from_slice(data) {
             Ok(ix) => {
                 Ok(Box::new(ix))
+            }
+            Err(e) => {
+                Err(TradeBotErrors::InvalidInstruction)
+            }
+        }
+    }
+    fn pack(to_pack: T) -> TradeBotResult<Vec<u8>> {
+        match to_pack.try_to_vec() {
+            Ok(packed) => {
+                Ok(packed)
             }
             Err(e) => {
                 Err(TradeBotErrors::InvalidInstruction)

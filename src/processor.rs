@@ -243,9 +243,11 @@ impl Processor {
         let initializer = next_account_info(accounts_iter).unwrap();
         let trader_account = next_account_info(accounts_iter).unwrap();
 
-        if trader.owner.ne(initializer.key) {
+        if trader_account.owner.ne(initializer.key) {
            return Err(TradeBotErrors::Unauthorized)
         }
+        let mut trader = TraderState::unpack(&mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
+
         trader.status = TraderStatus::Decommissioned;
         TraderState::pack(trader.clone(), &mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
         msg!("Trader Decommissioned");
@@ -272,12 +274,14 @@ impl Processor {
     }
 
     pub fn process_cleanup_decommissioned_trader(program_id: &Pubkey, accounts: &[AccountInfo], ix: &CloseTradeMarket) -> TradeBotResult<()> {
+        let accounts_iter = &mut accounts.iter();
         let serum_market_account = next_account_info(accounts_iter).unwrap();
         let serum_open_orders_account = next_account_info(accounts_iter).unwrap();
         let bids_account = next_account_info(accounts_iter).unwrap();
         let asks_account = next_account_info(accounts_iter).unwrap();
         let event_queue = next_account_info(accounts_iter).unwrap();
         let market_state_account = next_account_info(accounts_iter).unwrap();
+        let trader_account = next_account_info(accounts_iter).unwrap();
         let trader_signer_account = next_account_info(accounts_iter).unwrap();
         let serum_program = next_account_info(accounts_iter).unwrap();
 
@@ -326,7 +330,7 @@ impl Processor {
                     AccountMeta::new(asks_clone.key.clone(), false),
                     AccountMeta::new(serum_open_orders_account_clone.key.clone(), false),
                     AccountMeta::new_readonly(trader.trader_signer, true),
-                    AccountMeta::new(event_queue.key, false)
+                    AccountMeta::new(event_queue.key.clone(), false)
                 ],
                 program_id: serum_program.key.clone()
             };
