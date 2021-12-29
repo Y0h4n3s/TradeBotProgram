@@ -26,9 +26,11 @@ const {OpenOrders, DexInstructions, Market} = require("@project-serum/serum");
     let systemProgramId = new PublicKey("11111111111111111111111111111111")
     let payerBaseTokenAccount = new PublicKey('CEzHF6839TYwH4KcQgS77GfyfJdkHVBDgBxgYg9SEH64')
     let payerQuoteTokenAccount = new PublicKey('FpGxUvLJtwu9XKkfYXNMJeUzJ9KgLmDmEEXk9JXVkEkG')
+    let marketAddress = new PublicKey("BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E")
+
     let traders = await connection.getProgramAccounts(programId, {filters: [
             {dataSize: Trader.span},
-            {
+        {
                 memcmp: {
                     offset: 0,bytes: "BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E"
                 }
@@ -38,6 +40,7 @@ const {OpenOrders, DexInstructions, Market} = require("@project-serum/serum");
                     offset: Trader.offsetOf("owner"), bytes: payer.publicKey.toBase58()
                 }
             },
+
             {
                 memcmp: {
                     offset: Trader.offsetOf("status"), bytes: binary_to_base58(new Uint8Array([0])).toString()
@@ -45,7 +48,6 @@ const {OpenOrders, DexInstructions, Market} = require("@project-serum/serum");
             }
 
         ]})
-
 
     let trader = traders[0]
     let decodedTrader = Trader.decode(trader.account.data, 0)
@@ -59,23 +61,25 @@ const {OpenOrders, DexInstructions, Market} = require("@project-serum/serum");
 
     let market = serumMarkets[0]
     let decodedMarket = TradeMarketState.decode(market.account.data, 0);
+    let sermarket = await Market.load(connection, marketAddress, {}, serumProgramId)
 
     let minSerumOpenOrdersAccountRent = await connection.getMinimumBalanceForRentExemption(
         3228
     )
+    console.log(new BN(6000 * Math.pow(10, sermarket._baseSplTokenDecimals)))
     const data = {
-        tradeProfit: 0.1,
-        stoppingPrice: 5,
-        startingPriceBuy: 6.1,
-        startingPriceSell: 6.3,
-        simultaneousOpenPositions: new BN('200000'),
-        startingBaseBalance: new BN("10000000000"),
-        startingQuoteBalance: new BN("20000000000"),
-        startingValue: 30000000,
+        tradeProfit: new BN(1 * Math.pow(10, sermarket._quoteSplTokenDecimals)),
+        stoppingPrice: sermarket.priceNumberToLots(5),
+        startingPriceBuy: sermarket.priceNumberToLots(6.0),
+        startingPriceSell:sermarket.priceNumberToLots(6.5),
+        simultaneousOpenPositions: new BN('120'),
+        startingBaseBalance: new BN(6000 * Math.pow(10, sermarket._baseSplTokenDecimals)),
+        startingQuoteBalance:new BN(36000 * Math.pow(10, sermarket._quoteSplTokenDecimals)),
+        startingValue: new BN("30000000"),
         serumOpenOrdersRent: new BN(`${minSerumOpenOrdersAccountRent}`)
     }
-
-    let tx_data = Buffer.alloc(72)
+    console.log(data)
+    let tx_data = Buffer.alloc(InitializeTrader.span)
     InitializeTrader.encode(data, tx_data)
 
 
@@ -159,7 +163,7 @@ const {OpenOrders, DexInstructions, Market} = require("@project-serum/serum");
             isWritable: true
         }, {
             pubkey: serumOpenOrdersAccount.publicKey,
-            isSigner: false,
+            isSigner: true,
             isWritable: true
         }, {
             pubkey: payerBaseTokenAccount,

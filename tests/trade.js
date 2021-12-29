@@ -50,20 +50,10 @@ const BN = require("bn.js");
 
 
     let sermarket = await Market.load(connection, marketAddress, {}, serumProgramId)
+
     let myOrders = await sermarket.loadOrdersForOwner(connection, decodedTrader.marketSigner, 200000000000000000000);
     let decodedMarket = sermarket.decoded
-    let bids = await sermarket.loadBids(connection);
-    let asks = await sermarket.loadAsks(connection);
-
-    let sellPrice = sermarket.priceNumberToLots(Number(asks.getL2(1)[0][0].toFixed(5)) + 1)
-    let buyPrice = sermarket.priceNumberToLots(Number(bids.getL2(1)[0][0]).toFixed(5) - 1)
     const data = {
-        buyPrice,
-        sellPrice,
-        sizeBase: sermarket.baseSizeNumberToLots(500),
-        sizeQuote: new BN(sermarket.decoded.quoteLotSize).mul(sermarket.baseSizeNumberToLots(500)).mul(buyPrice),
-        clientOrderId: new BN(1234256),
-
     }
     console.log(myOrders)
     let tx_ix = Buffer.alloc(Trade.span)

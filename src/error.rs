@@ -28,6 +28,14 @@ pub enum TradeBotErrors {
     TraderExists,
     #[error("Not enough tokens")]
     InsufficientTokens,
+    #[error("The limit for the maximum number of open orders is passed")]
+    ExceededOpenOrdersLimit,
+     #[error("There are no open trades on the market")]
+    NoTradesFoundOnMarket,
+    #[error("Price range already has an unfilled order")]
+    PriceAlreadyTraded,
+    #[error("Price is lower than stop loss price")]
+    StopLossLimit,
     #[error("Program Error")]
     ProgramErr(ProgramError),
     #[error("Unknown error")]

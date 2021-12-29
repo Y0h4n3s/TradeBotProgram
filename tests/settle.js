@@ -65,6 +65,8 @@ const buffer_1 = require("buffer");
             {pubkey: trader.pubkey, isSigner: false, isWritable: true},
             {pubkey: marketAddress, isSigner: false, isWritable: true},
             {pubkey: decodedTrader.serumOpenOrders, isSigner: false, isWritable: true},
+            {pubkey: sermarket.decoded.bids, isSigner: false, isWritable: true},
+            {pubkey: sermarket.decoded.asks, isSigner: false, isWritable: true},
             {pubkey: decodedTrader.marketSigner, isSigner: false, isWritable: true},
             {pubkey: sermarket.decoded.baseVault, isSigner: false, isWritable: true},
             {pubkey: sermarket.decoded.quoteVault, isSigner: false, isWritable: true},
@@ -73,6 +75,7 @@ const buffer_1 = require("buffer");
             {pubkey: vaultSigner, isSigner: false, isWritable: true},
             {pubkey: serumProgramId, isSigner: false, isWritable: false},
             {pubkey: tokenProgramId, isSigner: false, isWritable: false},
+            {pubkey: marketAddress, isSigner: false, isWritable: false},
             {pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false}
         ],
         programId: programId

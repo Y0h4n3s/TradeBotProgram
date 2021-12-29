@@ -64,32 +64,38 @@ pub enum TraderStatus {
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
 pub struct TraderState {
     pub market_address: Pubkey,
-    pub base_market_wallet: Pubkey,
-    pub quote_market_wallet: Pubkey,
+    pub base_trader_wallet: Pubkey,
+    pub quote_trader_wallet: Pubkey,
     pub serum_open_orders: Pubkey,
-    pub market_signer: Pubkey,
+    pub trader_signer: Pubkey,
     pub market_state: Pubkey,
     pub owner: Pubkey,
-    pub min_trade_profit: f64,
-    pub stopping_price: f64,
-    pub starting_price_buy: f64,
-    pub starting_price_sell: f64,
+    pub min_trade_profit: u64,
+    pub stopping_price: u64,
+    pub starting_price_buy: u64,
+    pub starting_price_sell: u64,
     pub simultaneous_open_positions: u64,
     pub starting_base_balance: u64,
     pub starting_quote_balance: u64,
-    pub starting_value: f64,
+    pub starting_value: u64,
+    pub base_balance: u64,
+    pub quote_balance: u64,
+    pub value: u64,
+    pub open_order_pairs: u64,
     pub total_txs: u64,
-    pub status: TraderStatus
+    pub register_date: u64,
+    pub status: TraderStatus,
+    pub _padding: [u64; 16]
 }
 
-pub const TRADER_SPAN: u64 = 297;
+pub const TRADER_SPAN: u64 = 465;
 
 
 
 impl Sealed for TraderState {}
 
 impl Pack for TraderState {
-    const LEN: usize = 297;
+    const LEN: usize = 465;
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
         self.serialize(&mut slice).unwrap()

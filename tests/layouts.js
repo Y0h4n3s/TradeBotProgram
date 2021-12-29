@@ -109,28 +109,30 @@ const RegisterTrader = bufferLayout.struct([
 ])
 
 const InitializeTrader = bufferLayout.struct([
-    new bufferLayout.Double("tradeProfit"),
-    new bufferLayout.Double("stoppingPrice"),
-    new bufferLayout.Double("startingPriceBuy"),
-    new bufferLayout.Double("startingPriceSell"),
+    new U64("tradeProfit"),
+    new U64("stoppingPrice"),
+    new U64("startingPriceBuy"),
+    new U64("startingPriceSell"),
     new U64("simultaneousOpenPositions"),
     new U64("startingBaseBalance"),
     new U64("startingQuoteBalance"),
-    new bufferLayout.Double("startingValue"),
+    new U64("startingValue"),
     new U64("serumOpenOrdersRent"),
 ])
 
 const Trade = bufferLayout.struct([
-    new U128("buyPrice"),
-    new U128("sellPrice"),
-    new U128("sizeBase"),
-    new U128("sizeQuote"),
-    new U128("clientOrderId"),
-    bufferLayout.blob(65, "_padding")
+    bufferLayout.blob(128, "_padding")
 
 
 ])
 
+const UpdateTrader = bufferLayout.struct([
+    new U64("tradeProfit"),
+    new U64("stoppingPrice"),
+    new U64("simultaneousOpenPositions"),
+    bufferLayout.blob(65, "_padding")
+
+])
 const Trader = bufferLayout.struct([
     new PublicKeyLayout("marketAddress"),
     new PublicKeyLayout("baseMarketWallet"),
@@ -139,16 +141,22 @@ const Trader = bufferLayout.struct([
     new PublicKeyLayout("marketSigner"),
     new PublicKeyLayout("marketState"),
     new PublicKeyLayout("owner"),
-    new bufferLayout.Double("tradeProfit"),
-    new bufferLayout.Double("stoppingPrice"),
-    new bufferLayout.Double("startingPriceBuy"),
-    new bufferLayout.Double("startingPriceSell"),
+    new U64("tradeProfit"),
+    new U64("stoppingPrice"),
+    new U64("startingPriceBuy"),
+    new U64("startingPriceSell"),
     new U64("simultaneousOpenPositions"),
     new U64("startingBaseBalance"),
     new U64("startingQuoteBalance"),
-    new bufferLayout.Double("startingValue"),
+    new U64("startingValue"),
+    new U64("baseBalance"),
+    new U64("quoteBalance"),
+    new U64("value"),
+    new U64("openOrderPairs"),
     new U64("totalTxs"),
-    bufferLayout.u8("status")
+    new U64("registerDate"),
+    bufferLayout.u8("status"),
+    bufferLayout.blob(128, "_padding")
 ])
 
-module.exports = {TradeMarketState, CloseTradeMarket, InitializeTrader, RegisterTrader, Trader, Trade}
+module.exports = {TradeMarketState, CloseTradeMarket, InitializeTrader, RegisterTrader, Trader, Trade, UpdateTrader}

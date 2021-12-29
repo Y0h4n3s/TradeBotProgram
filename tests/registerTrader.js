@@ -35,7 +35,6 @@ const {OpenOrders, DexInstructions, Market} = require("@project-serum/serum");
 
     let market = serumMarkets[0]
     let decodedMarket = TradeMarketState.decode(market.account.data, 0);
-    console.log(decodedMarket)
     const data = {
         registerDate: new BN(new Date().getTime() / 1000)
     }

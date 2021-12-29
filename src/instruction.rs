@@ -25,21 +25,28 @@ pub struct InitializeTradeMarket {
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct RegisterTrader {
-    pub register_date: u64
-}
-
-#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
-pub struct InitializeTrader {
-    pub trade_profit: f64,
-    pub stopping_price: f64,
-    pub starting_price_buy: f64,
-    pub starting_price_sell: f64,
+    pub trade_profit: u64,
+    pub stopping_price: u64,
+    pub starting_price_buy: u64,
+    pub starting_price_sell: u64,
     pub simultaneous_open_positions: u64,
     pub starting_base_balance: u64,
     pub starting_quote_balance: u64,
-    pub starting_value: f64,
+    pub starting_value: u64,
     pub serum_open_orders_rent: u64,
+    pub register_date: u64,
+    pub padding: [u8; 16]
 }
+
+
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
+pub struct UpdateTrader {
+    pub trade_profit: u64,
+    pub stopping_price: u64,
+    pub simultaneous_open_positions: u64,
+    pub _padding: [u8; 65]
+}
+
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct DecommissionTrader {
@@ -57,12 +64,7 @@ pub struct CloseTradeMarket {
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct Trade {
-    pub buy_price: u128,
-    pub sell_price: u128,
-    pub size_base: u128,
-    pub size_quote: u128,
-    pub client_order_id: u128,
-    pub _padding: [u8; 65]
+    pub _padding: [u8; 128]
 }
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
@@ -75,7 +77,6 @@ pub trait TradeBotInstruction<T: AnchorDeserialize  + Debug> {
     fn unpack(data: &[u8]) -> TradeBotResult<Box<T>> {
         match T::try_from_slice(data) {
             Ok(ix) => {
-                msg!("{:?}", ix);
                 Ok(Box::new(ix))
             }
             Err(e) => {
@@ -103,15 +104,15 @@ impl TradeBotInstruction<Self> for CloseTradeMarket{
 
 }
 
-impl TradeBotInstruction<Self> for InitializeTrader{
-
-}
 
 impl TradeBotInstruction<Self> for DecommissionTrader{
 
 }
 
 impl TradeBotInstruction<Self> for Settle{
+
+}
+impl TradeBotInstruction<Self> for UpdateTrader{
 
 }
 // impl TradeBotInstruction for CloseTradeMarket {
