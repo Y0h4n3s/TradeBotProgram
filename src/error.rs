@@ -12,10 +12,10 @@ pub enum TradeBotError {
 
 }
 
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[derive(Debug, Error, Clone, PartialEq, PartialOrd, Eq)]
 pub enum TradeBotErrors {
     #[error("Instruction Is not known by the program(a.k.a me)")]
-    UnknownInstruction,
+    UnknownInstruction ,
     #[error("Instruction data is invalid")]
     InvalidInstruction,
     #[error("The market address is already saved")]
@@ -25,7 +25,7 @@ pub enum TradeBotErrors {
     #[error("You are not authorized to perform this action")]
     Unauthorized,
     #[error("Trader already exists")]
-    TraderExists,
+    TraderExists = 5,
     #[error("Not enough tokens")]
     InsufficientTokens,
     #[error("The limit for the maximum number of open orders is passed")]
@@ -35,9 +35,9 @@ pub enum TradeBotErrors {
     #[error("Price range already has an unfilled order")]
     PriceAlreadyTraded,
     #[error("Price is lower than stop loss price")]
-    StopLossLimit,
+    StopLossLimit = 10,
     #[error("Program Error")]
-    ProgramErr(ProgramError),
+    ProgramErr,
     #[error("Unknown error")]
     UnknownError,
 
@@ -48,13 +48,15 @@ pub enum TradeBotErrors {
 
 impl From<TradeBotErrors> for ProgramError {
     fn from(e: TradeBotErrors) -> ProgramError {
-        ProgramError::Custom(1)
+
+        ProgramError::Custom(e as u8 as u32)
     }
 }
 
 impl From<ProgramError> for TradeBotErrors {
     fn from(err: ProgramError) -> Self {
-        TradeBotErrors::ProgramErr(err)
+        TradeBotErrors::ProgramErr
+
     }
 }
 

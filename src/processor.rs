@@ -32,45 +32,40 @@ pub const TRADES_CLIENT_ID: u64 = 1221144433222;
 pub struct Processor {}
 
 impl Processor {
-    pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], data: &[u8]) -> ProgramResult {
+    pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], data: &[u8]) -> TradeBotResult<()> {
         match data.len() {
             0 => {
                 let ix = InitializeTradeMarket::unpack(data).unwrap();
-                Self::process_initialize_trade_market(program_id, accounts, ix.as_ref()).unwrap();
-                Ok(())
+                Self::process_initialize_trade_market(program_id, accounts, ix.as_ref())
             }
             65 => {
                 let ix = CloseTradeMarket::unpack(data).unwrap();
-                Self::process_close_trade_market(program_id, accounts, ix.as_ref()).unwrap();
-                Ok(())
+                Self::process_close_trade_market(program_id, accounts, ix.as_ref())
             }
             128 => {
                 let ix = Trade::unpack(data).unwrap();
-                Self::process_trade(program_id, accounts, ix.as_ref()).unwrap();
-                Ok(())
+                Self::process_trade(program_id, accounts, ix.as_ref())
+
             }
             96 => {
                 let ix = RegisterTrader::unpack(data).unwrap();
-                Self::process_register_trader(program_id, accounts, ix.as_ref()).unwrap();
-                Ok(())
+                Self::process_register_trader(program_id, accounts, ix.as_ref())
             }
             56 => {
                 let ix = DecommissionTrader::unpack(data).unwrap();
-                Self::process_decommission_trader(program_id, accounts, ix.as_ref()).unwrap();
-                Ok(())
+                Self::process_decommission_trader(program_id, accounts, ix.as_ref())
             }
             80 => {
                 let ix = Settle::unpack(data).unwrap();
-                Self::process_settle(program_id, accounts, ix.as_ref()).unwrap();
-                Ok(())
+                Self::process_settle(program_id, accounts, ix.as_ref())
             }
             89 => {
                 let ix = UpdateTrader::unpack(data).unwrap();
-                Self::process_update_trader(program_id, accounts, ix.as_ref()).unwrap();
-                Ok(())
+                Self::process_update_trader(program_id, accounts, ix.as_ref())
+
             }
             _ => {
-                Err(ProgramError::from(UnknownInstruction))
+                Err(TradeBotErrors::UnknownInstruction)
             }
         }
     }
@@ -367,9 +362,14 @@ impl Processor {
 
 
         let mut trader = TraderState::unpack(&mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
-        let market_account_seed = Self::calculate_seed_for_owner_and_market(&trader.market_state, &trader.owner);
+        let market_account_seed = Self::calculate_seed_for_owner_and_market(&trader.market_address, &trader.owner);
         let (pda, nonce) = Pubkey::find_program_address(&[market_account_seed.as_slice()], program_id);
         let serum_open_order_as = serum_open_orders_account.key.clone().to_aligned_bytes();
+
+
+        if pda.ne(trader_signer.key) {
+            return Err(TradeBotErrors::Unauthorized)
+        }
 
         let base_account = spl_token::state::Account::unpack(&base_market_wallet.try_borrow_data().unwrap()).unwrap();
         let quote_account = spl_token::state::Account::unpack(&quote_market_wallet.try_borrow_data().unwrap()).unwrap();
@@ -397,11 +397,17 @@ impl Processor {
         let base_size = trader.base_balance  / (trader.simultaneous_open_positions - trader.open_order_pairs * 2);
 
         let quote_size = trader.quote_balance / (trader.simultaneous_open_positions - trader.open_order_pairs * 2);
-        let price_gap_buy = market_price - ((quote_size * market_price) / (trader.min_trade_profit / 2 + quote_size));
-        let price_gap_sell = ((trader.min_trade_profit + 2 * base_size * market_price) / (2 * base_size)) - market_price;
+        let mut price_gap_buy = market_price - ((quote_size * market_price) / (trader.min_trade_profit / 2 + quote_size));
+        let mut price_gap_sell = ((trader.min_trade_profit + 2 * base_size * market_price) / (2 * base_size)) - market_price;
+        if price_gap_buy == 0 {
+            price_gap_buy = 1
+        }
+        if price_gap_sell == 0 {
+            price_gap_sell = 1
+        }
         let order_buy_price = market_price - price_gap_buy;
         let order_sell_price = market_price + price_gap_sell;
-
+        msg!("{} {}", price_gap_buy, price_gap_sell);
         if base_account.amount  <= base_size || quote_account.amount <= quote_size {
             return Err(TradeBotErrors::InsufficientTokens)
         }
@@ -474,7 +480,7 @@ impl Processor {
                 AccountMeta { pubkey: bids_account.key.clone(), is_signer: false, is_writable: true },
                 AccountMeta { pubkey: asks_account.key.clone(), is_signer: false, is_writable: true },
                 AccountMeta { pubkey: base_market_wallet.key.clone(), is_signer: false, is_writable: true },
-                AccountMeta { pubkey: trader_signer.key.clone(), is_signer: true, is_writable: true },
+                AccountMeta { pubkey: trader_signer.key.clone(), is_signer: true, is_writable: false },
                 AccountMeta { pubkey: coin_vault.key.clone(), is_signer: false, is_writable: true },
                 AccountMeta { pubkey: pc_vault.key.clone(), is_signer: false, is_writable: true },
                 AccountMeta { pubkey: token_program.key.clone(), is_signer: false, is_writable: false },
@@ -492,7 +498,7 @@ impl Processor {
                 AccountMeta { pubkey: bids_account.key.clone(), is_signer: false, is_writable: true },
                 AccountMeta { pubkey: asks_account.key.clone(), is_signer: false, is_writable: true },
                 AccountMeta { pubkey: quote_market_wallet.key.clone(), is_signer: false, is_writable: true },
-                AccountMeta { pubkey: trader_signer.key.clone(), is_signer: true, is_writable: true },
+                AccountMeta { pubkey: trader_signer.key.clone(), is_signer: true, is_writable: false },
                 AccountMeta { pubkey: coin_vault.key.clone(), is_signer: false, is_writable: true },
                 AccountMeta { pubkey: pc_vault.key.clone(), is_signer: false, is_writable: true },
                 AccountMeta { pubkey: token_program.key.clone(), is_signer: false, is_writable: false },

@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
 };
@@ -16,6 +17,6 @@ fn process_instruction(
     //     accounts.len(),
     //     instruction_data
     // );
-    Ok(Processor::process(program_id, accounts, instruction_data).unwrap())
+    Ok(Processor::process(program_id, accounts, instruction_data)?)
 }
 

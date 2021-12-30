@@ -40,7 +40,7 @@ const BN = require("bn.js");
             },
             {
                 memcmp: {
-                    offset: Trader.offsetOf("status"), bytes: binary_to_base58(new Uint8Array([1])).toString()
+                    offset: Trader.offsetOf("status"), bytes: binary_to_base58(new Uint8Array([0])).toString()
                 }
             }
 
