@@ -435,7 +435,7 @@ impl Processor {
         });
 
         for open_price in open_prices {
-            if open_price > order_buy_price && open_price < order_sell_price {
+            if open_price >= order_buy_price && open_price <= order_sell_price {
                 return Err(TradeBotErrors::PriceAlreadyTraded)
             }
         }
@@ -573,7 +573,7 @@ impl Processor {
         let market_clone = market.clone();
         let serum_open_orders_clone = serum_open_orders.clone();
         let mut trader = TraderState::unpack(&mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
-        let market_account_seed = Self::calculate_seed_for_owner_and_market(&trader.market_state, &trader.owner);
+        let market_account_seed = Self::calculate_seed_for_owner_and_market(&trader.market_address, &trader.owner);
         let (pda, nonce) = Pubkey::find_program_address(&[market_account_seed.as_slice()], program_id);
         if pda.to_string() != trader_signer.key.to_string() {
             return Err(TradeBotErrors::Unauthorized)
