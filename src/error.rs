@@ -1,4 +1,4 @@
-use num_enum::{FromPrimitive, IntoPrimitive};
+use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 use solana_program::program_error::ProgramError;
 use thiserror::Error;
 
@@ -12,7 +12,7 @@ pub enum TradeBotError {
 
 }
 #[repr(u8)]
-#[derive(Debug, Error, Clone, PartialEq, PartialOrd, Eq)]
+#[derive(Debug, Error, Clone, PartialEq, PartialOrd, Eq, TryFromPrimitive)]
 pub enum TradeBotErrors {
     #[error("Instruction Is not known by the program(a.k.a me)")]
     UnknownInstruction ,
