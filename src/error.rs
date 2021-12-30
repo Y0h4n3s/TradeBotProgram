@@ -11,7 +11,7 @@ pub enum TradeBotError {
     ProgramError(ProgramError),
 
 }
-
+#[repr(u8)]
 #[derive(Debug, Error, Clone, PartialEq, PartialOrd, Eq)]
 pub enum TradeBotErrors {
     #[error("Instruction Is not known by the program(a.k.a me)")]
