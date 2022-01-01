@@ -30,7 +30,7 @@ const {OpenOrders, DexInstructions, Market} = require("@project-serum/serum");
             {dataSize: Trader.span},
             {
                 memcmp: {
-                    offset: 0, bytes: "BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E"
+                    offset: 0, bytes: "HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa"
                 }
             },
             {

@@ -24,14 +24,14 @@ const buffer_1 = require("buffer");
     let tx = new Transaction()
     let tokenProgramId = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
     let serumProgramId = new PublicKey("73A1rYyFwTpRzEsGjJc1P45ee7qMo8vXuMZUDC42Wzwe")
-    let marketAddress = new PublicKey("BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E")
+    let marketAddress = new PublicKey("HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa")
     let signer = new Keypair()
 
     let traders = await connection.getProgramAccounts(programId, {filters: [
             {dataSize: Trader.span},
             {
                 memcmp: {
-                    offset: 0,bytes: "BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E"
+                    offset: 0,bytes: "HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa"
                 }
             },
             {
@@ -43,6 +43,7 @@ const buffer_1 = require("buffer");
                 memcmp: {
                     offset: Trader.offsetOf("status"), bytes: binary_to_base58(new Uint8Array([1])).toString()
                 }
+
             }
 
         ]})

@@ -23,7 +23,7 @@ const BN = require("bn.js");
     let tx = new Transaction()
     let tokenProgramId = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
     let serumProgramId = new PublicKey("73A1rYyFwTpRzEsGjJc1P45ee7qMo8vXuMZUDC42Wzwe")
-    let marketAddress = new PublicKey("BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E")
+    let marketAddress = new PublicKey("HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa")
     let signer = new Keypair()
 
     let traders = await connection.getProgramAccounts(programId, {
@@ -31,7 +31,7 @@ const BN = require("bn.js");
             {dataSize: Trader.span},
             {
                 memcmp: {
-                    offset: 0, bytes: "BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E"
+                    offset: 0, bytes: "HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa"
                 }
             },
             {
@@ -41,7 +41,7 @@ const BN = require("bn.js");
             },
             {
                 memcmp: {
-                    offset: Trader.offsetOf("status"), bytes: binary_to_base58(new Uint8Array([0])).toString()
+                    offset: Trader.offsetOf("status"), bytes: binary_to_base58(new Uint8Array([1])).toString()
                 }
             }
 
@@ -56,5 +56,36 @@ const BN = require("bn.js");
     console.log("baseBalance:", decodedTrader.baseBalance.toNumber())
     console.log("quoteBalance:", decodedTrader.quoteBalance.toNumber())
     console.log("totalTxs:", decodedTrader.totalTxs.toNumber())
+    console.log(OpenOrders.getLayout(serumProgramId).span, OpenOrders.getLayout(serumProgramId).offsetOf("owner"))
+    let market = await Market.load(connection, decodedTrader.marketAddress, undefined, serumProgramId)
+    console.log("\nMarketBaseVault:", market.decoded.baseVault.toBase58())
+    console.log("MarketQuoteVault:", market.decoded.quoteVault.toBase58())
+    const bids = await market.loadBids(connection)
+    const asks = await market.loadAsks(connection)// Retrieving fills
+    const fills = await market.loadFills(connection);
+
+    let events = await market.loadEventQueue(connection)
+    console.log(events.length)
+//     for (let fill of fills) {
+//   console.log(fill.orderId, fill.price, fill.size, fill.side);
+// }
+    console.log(fills.length)
+    //
+    // // Retrieving fills
+    // for (let fill of await market.loadFills(connection)) {
+    //     console.log(fill.orderId, fill.price, fill.size, fill.side);
+    // }
+    // for (let [price, size] of bids.getL2(20)) {
+    //     console.log(price, size);
+    // }
+    //
+    // for (let order of asks) {
+    //     console.log(
+    //         order.orderId,
+    //         order.price,
+    //         order.size,
+    //         order.side, // 'buy' or 'sell'
+    //     );
+    // }
 
 })()

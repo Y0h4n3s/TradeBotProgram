@@ -29,7 +29,7 @@ const {OpenOrders, DexInstructions} = require("@project-serum/serum");
 
 
 
-    let market = new PublicKey("BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E")
+    let market = new PublicKey("HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa")
 
     let tx_data = Buffer.alloc(0)
 

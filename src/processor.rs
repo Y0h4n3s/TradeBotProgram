@@ -605,8 +605,8 @@ impl Processor {
         let bids = Self::parse_order_book_for_owner(Side::Bid, serum_market.load_bids_mut(bids).unwrap().deref().clone(), &serum_open_order_as);
         let asks = Self::parse_order_book_for_owner(Side::Ask, serum_market.load_asks_mut(asks).unwrap().deref().clone(), &serum_open_order_as);
         let open_orders = serum_market.load_orders_mut(serum_open_orders, Some(trader_signer), serum_program.key, None, None).unwrap();
-        // msg!("{:?} {:?} {:?}", open_orders.native_coin_total, open_orders.native_pc_free, open_orders.native_coin_free);serum_market.borrow();
-        // msg!("{:?} {:?} {:?}", open_orders.native_pc_total, bids, asks);
+        msg!("{:?} {:?} {:?}", open_orders.native_coin_total, open_orders.native_pc_free, open_orders.native_coin_free);serum_market.borrow();
+        msg!("{:?} {:?} {:?}", open_orders.native_pc_total, bids, asks);
 
 
         trader.base_balance += open_orders.native_coin_free;

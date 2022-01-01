@@ -62,7 +62,7 @@ async function signTransactions({
     let tokenProgramId = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
     let serumProgramId = new PublicKey("73A1rYyFwTpRzEsGjJc1P45ee7qMo8vXuMZUDC42Wzwe")
 
-    let baseLotSize = 100000
+    let baseLotSize = 1000
     let quoteLotSize = 100
     let feeRateBps = 0
     let baseMint = new PublicKey("EdnAnrrvnS42MZNrj4wpDqE6XAJMg3sADPEcqgyAzJ9H")
@@ -189,6 +189,6 @@ async function signTransactions({
 
     })
 
-//BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E
+//HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa
 
 })()

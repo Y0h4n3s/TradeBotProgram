@@ -6,28 +6,28 @@ const {initializeLocalPayerAccount, printProgramLogsForSignature} = require("./h
     const connection = new Connection("https://api.devnet.solana.com");
     let payer = await initializeLocalPayerAccount(connection);
     let serumProgramId = new PublicKey("73A1rYyFwTpRzEsGjJc1P45ee7qMo8vXuMZUDC42Wzwe")
-    let market = new PublicKey("BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E")
+    let market = new PublicKey("HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa")
     let sermarket = await Market.load(connection, market, {}, serumProgramId)
     let payerBaseTokenAccount = new PublicKey('CEzHF6839TYwH4KcQgS77GfyfJdkHVBDgBxgYg9SEH64')
     let payerQuoteTokenAccount = new PublicKey('FpGxUvLJtwu9XKkfYXNMJeUzJ9KgLmDmEEXk9JXVkEkG')
     let asks = [
-        [6.041, 7.8],
-        [6.051, 72.3],
-        [6.055, 5.4],
-        [6.067, 15.7],
-        [6.077, 390.0],
-        [6.09, 24.0],
-        [6.11, 36.3],
-        [6.133, 300.0],
-        [6.167, 687.8],
+        [3.041, 7.8],
+        [3.051, 72.3],
+        [3.055, 5.4],
+        [3.067, 15.7],
+        [3.077, 390.0],
+        [3.09, 24.0],
+        [3.11, 36.3],
+        [3.133, 300.0],
+        [3.167, 687.8],
     ];
     let bids = [
-        [6.004, 8.5],
-        [5.995, 12.9],
-        [5.987, 6.2],
-        [5.978, 15.3],
-        [5.965, 82.8],
-        [5.961, 25.4],
+        [2.4, 18500],
+        [2.5, 11290],
+        [2.7, 16200],
+        [2.8, 11503],
+        [2.9, 18208],
+        [2.961, 12054],
     ];
 
     for (let k = 0; k < asks.length; k += 1) {

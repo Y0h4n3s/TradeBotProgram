@@ -26,14 +26,14 @@ const {OpenOrders, DexInstructions, Market} = require("@project-serum/serum");
     let systemProgramId = new PublicKey("11111111111111111111111111111111")
     let payerBaseTokenAccount = new PublicKey('CEzHF6839TYwH4KcQgS77GfyfJdkHVBDgBxgYg9SEH64')
     let payerQuoteTokenAccount = new PublicKey('FpGxUvLJtwu9XKkfYXNMJeUzJ9KgLmDmEEXk9JXVkEkG')
-    let marketAddress = new PublicKey("BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E")
+    let marketAddress = new PublicKey("HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa")
 
     let traders = await connection.getProgramAccounts(programId, {
         filters: [
             {dataSize: Trader.span},
             {
                 memcmp: {
-                    offset: 0, bytes: "BYvVg2HW8gFT1kpEBbDqMTa7pfd2LJxHyFRvYHKWeg5E"
+                    offset: 0, bytes: "HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa"
                 }
             },
             {
