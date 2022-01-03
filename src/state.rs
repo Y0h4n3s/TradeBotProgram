@@ -58,7 +58,8 @@ impl IsInitialized for TradeMarketState {
 pub enum TraderStatus {
     Registered,
     Initialized,
-    Decommissioned
+    Decommissioned,
+    Stopped
 }
 
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]

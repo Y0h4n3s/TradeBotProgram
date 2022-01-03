@@ -72,6 +72,12 @@ pub struct Settle {
     pub _padding: [u64; 10]
 }
 
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
+pub struct CleanUp {
+    pub _padding: [u64; 20]
+
+}
+
 pub trait TradeBotInstruction<T: AnchorSerialize + AnchorDeserialize  + Debug > {
 
     fn unpack(data: &[u8]) -> TradeBotResult<Box<T>> {
@@ -100,6 +106,9 @@ pub trait TradeBotInstruction<T: AnchorSerialize + AnchorDeserialize  + Debug > 
 
 
 impl TradeBotInstruction<Self> for InitializeTradeMarket{
+
+}
+impl TradeBotInstruction<Self> for CleanUp{
 
 }
 
