@@ -1,32 +1,21 @@
-use anchor_lang::__private::bytemuck::__core::ops::{Deref, DerefMut};
-use anchor_lang::__private::bytemuck::bytes_of;
+use anchor_lang::__private::bytemuck::__core::ops::{Deref};
 use anchor_lang::prelude::*;
 use serum_dex::critbit::{Slab, SlabView};
 use serum_dex::instruction::{MarketInstruction, SelfTradeBehavior};
 use serum_dex::matching::{OrderType, Side};
-use serum_dex::state::{Market, ToAlignedBytes};
+use serum_dex::state::{ToAlignedBytes};
 use solana_program::account_info::{next_account_info, AccountInfo};
 use solana_program::instruction::Instruction;
-use solana_program::log::sol_log_compute_units;
 use solana_program::msg;
 use solana_program::program::{invoke, invoke_signed};
-use solana_program::program_error::ProgramError;
-use solana_program::program_memory::sol_memcmp;
-use solana_program::program_pack::{IsInitialized, Pack};
-use solana_program::{entrypoint::ProgramResult, pubkey::Pubkey};
-use spl_token::instruction::transfer;
-use spl_token::state::Mint;
-use std::borrow::Borrow;
-use std::cell::RefMut;
+use solana_program::program_pack::{ Pack};
+use solana_program::{pubkey::Pubkey};
 use std::cmp::{max, min, Reverse};
 use std::convert::{TryFrom, TryInto};
-use std::f64;
 use std::num::NonZeroU64;
-
-use crate::error::TradeBotErrors::UnknownInstruction;
-use crate::error::{TradeBotError, TradeBotErrors, TradeBotResult};
+use crate::error::{ TradeBotErrors, TradeBotResult};
 use crate::instruction::{
-    CleanUp, CloseTradeMarket, DecommissionTrader, Deposit, InitializeTradeMarket, MarketStatus,
+    CleanUp, DecommissionTrader, Deposit,
     RegisterTrader, Settle, Trade, TradeBotInstruction, UpdateTrader,
 };
 use crate::state::{TraderState, TraderStatus};
@@ -143,7 +132,7 @@ impl Processor {
 
         invoke(&transfer_base_to_market_wallet_ix, accounts).unwrap();
         invoke(&transfer_quote_to_market_wallet_ix, accounts).unwrap();
-        let createSerumOpenOrdersAccountIx = solana_program::system_instruction::create_account(
+        let create_serum_open_orders_account_ix = solana_program::system_instruction::create_account(
             &pda,
             &serum_open_orders_account.key,
             ix.serum_open_orders_rent,
@@ -151,7 +140,7 @@ impl Processor {
             serum_program_account.key,
         );
         invoke_signed(
-            &createSerumOpenOrdersAccountIx,
+            &create_serum_open_orders_account_ix,
             accounts,
             &[&[market_account_seed.as_slice(), &[nonce]]],
         )
@@ -245,14 +234,14 @@ impl Processor {
     }
 
     pub fn process_decommission_trader(
-        program_id: &Pubkey,
+        _program_id: &Pubkey,
         accounts: &[AccountInfo],
-        ix: &DecommissionTrader,
+        _ix: &DecommissionTrader,
     ) -> TradeBotResult<()> {
         let accounts_iter = &mut accounts.iter();
         let initializer = next_account_info(accounts_iter)?;
         let trader_account = next_account_info(accounts_iter).unwrap();
-        let mut trader =
+        let trader =
             TraderState::unpack(&mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
         if trader.owner.ne(initializer.key) || !initializer.is_signer {
             return Err(TradeBotErrors::Unauthorized);
@@ -296,8 +285,8 @@ impl Processor {
             serum_dex::state::Market::load(serum_market_account, serum_program.key, true).unwrap();
         let bids_slab = serum_market.load_bids_mut(bids_account).unwrap();
         let asks_slab = serum_market.load_asks_mut(asks_account).unwrap();
-        let mut all_bids = Self::parse_order_book(Side::Bid, bids_slab.deref().clone());
-        let mut all_asks = Self::parse_order_book(Side::Ask, asks_slab.deref().clone());
+        let all_bids = Self::parse_order_book(Side::Bid, bids_slab.deref().clone());
+        let all_asks = Self::parse_order_book(Side::Ask, asks_slab.deref().clone());
         let mut my_orders: Vec<Order> = vec![];
         let serum_open_order_as = serum_open_orders_account.key.clone().to_aligned_bytes();
 
@@ -313,7 +302,7 @@ impl Processor {
         });
         let market_account_seed =
             Self::calculate_seed_for_owner_and_market(&trader.market_address, &trader.owner);
-        let (pda, nonce) =
+        let (_pda, nonce) =
             Pubkey::find_program_address(&[market_account_seed.as_slice()], program_id);
         let mut ixs: Vec<Instruction> = vec![];
         let open_orders = serum_market
@@ -443,7 +432,7 @@ impl Processor {
             TraderState::unpack(&mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
         let market_account_seed =
             Self::calculate_seed_for_owner_and_market(&trader.market_address, &trader.owner);
-        let (pda, nonce) =
+        let (pda, _nonce) =
             Pubkey::find_program_address(&[market_account_seed.as_slice()], program_id);
 
         if pda.ne(trader_signer_account.key) {
@@ -560,11 +549,12 @@ impl Processor {
         let sell_price = all_asks.get(0).unwrap().price;
         let market_price = (buy_price + sell_price) / 2;
 
-        if (trader.simultaneous_open_positions - trader.open_order_pairs * 2) <= 0 {
+        msg!("{}", Self::even(trader.simultaneous_open_positions - trader.open_order_pairs * 2));
+        if Self::even(trader.simultaneous_open_positions - trader.open_order_pairs * 2) <= 1 {
             return Err(TradeBotErrors::ExceededOpenOrdersLimit);
         }
         let base_size = trader.base_balance
-            / (trader.simultaneous_open_positions - trader.open_order_pairs * 2);
+            / Self::even(trader.simultaneous_open_positions - trader.open_order_pairs * 2);
 
         let base_size_lots = base_size / serum_market.coin_lot_size;
 
@@ -825,7 +815,7 @@ impl Processor {
         let serum_open_order_as = serum_open_orders_account.key.clone().to_aligned_bytes();
 
         let data = MarketInstruction::SettleFunds.pack();
-        let mut accounts1: Vec<AccountMeta> = vec![
+        let accounts1: Vec<AccountMeta> = vec![
             AccountMeta::new(serum_market_account.key.clone(), false),
             AccountMeta::new(serum_open_orders_account.key.clone(), false),
             AccountMeta::new_readonly(trader_signer_account.key.clone(), true),
@@ -905,8 +895,6 @@ impl Processor {
         let sell_price = all_asks.get(0).unwrap().price;
         let market_price = (buy_price + sell_price) / 2;
 
-        msg!("{} {} {}", (base_trader_wallet_account.amount + open_orders.native_coin_total), (open_orders.native_pc_total + quote_trader_wallet_account.amount), trader.min_trade_profit);
-        msg!("{} {} ", serum_market.coin_lot_size, serum_market.pc_lot_size);
         trader.base_balance = base_trader_wallet_account.amount;
         trader.quote_balance = quote_trader_wallet_account.amount;
         trader.value = ((((base_trader_wallet_account.amount + open_orders.native_coin_total)
@@ -928,6 +916,18 @@ impl Processor {
         Ok(())
     }
 
+    fn even(num: u64) -> u64 {
+        return if num == 1 {
+            num + 1
+        } else if num == 0 {
+            0
+        } else if num % 2 == 0 {
+            num as u64
+        } else {
+            num - 1
+        }
+    }
+
     fn calculate_seed_for_owner_and_market(owner: &Pubkey, market: &Pubkey) -> Vec<u8> {
         let mut i = 0;
         let owner_bytes = owner.to_bytes().clone();
@@ -941,20 +941,20 @@ impl Processor {
         return seed;
     }
 
-    fn price_number_to_lots(
-        market: &Market,
-        price: f64,
-        base_mint: &Mint,
-        quote_mint: &Mint,
-    ) -> u64 {
-        return ((price * 10_f64.powf(f64::from(quote_mint.decimals))) as u64
-            * market.coin_lot_size)
-            / (10_u64.pow(u32::from(base_mint.decimals)) * market.pc_lot_size);
-    }
+    // fn price_number_to_lots(
+    //     market: &Market,
+    //     price: f64,
+    //     base_mint: &Mint,
+    //     quote_mint: &Mint,
+    // ) -> u64 {
+    //     return ((price * 10_f64.powf(f64::from(quote_mint.decimals))) as u64
+    //         * market.coin_lot_size)
+    //         / (10_u64.pow(u32::from(base_mint.decimals)) * market.pc_lot_size);
+    // }
 
-    fn base_size_number_to_lots(market: &Market, size: f64, base_mint: &Mint) -> u64 {
-        return (size * 10_f64.powf(f64::from(base_mint.decimals))) as u64 / market.coin_lot_size;
-    }
+    // fn base_size_number_to_lots(market: &Market, size: f64, base_mint: &Mint) -> u64 {
+    //     return (size * 10_f64.powf(f64::from(base_mint.decimals))) as u64 / market.coin_lot_size;
+    // }
 
     fn parse_order_book_for_owner(side: Side, slab: &Slab, owner: &[u64; 4]) -> Vec<Order> {
         let mut filtered: Vec<Order> = vec![];
@@ -966,7 +966,6 @@ impl Processor {
                             filtered.push(Order {
                                 side,
                                 price: u64::try_from(n.price()).unwrap(),
-                                size: n.quantity(),
                                 client_id: n.client_order_id(),
                                 owner: n.owner(),
                                 order_id: n.order_id(),
@@ -989,7 +988,6 @@ impl Processor {
                     Some(n) => filtered.push(Order {
                         side,
                         price: u64::try_from(n.price()).unwrap(),
-                        size: n.quantity(),
                         client_id: n.client_order_id(),
                         owner: n.owner(),
                         order_id: n.order_id(),
@@ -1006,7 +1004,6 @@ impl Processor {
 pub struct Order {
     side: Side,
     price: u64,
-    size: u64,
     client_id: u64,
     owner: [u64; 4],
     order_id: u128,

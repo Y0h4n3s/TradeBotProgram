@@ -1,4 +1,4 @@
-use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
+use num_enum::{ TryFromPrimitive};
 use solana_program::program_error::ProgramError;
 use thiserror::Error;
 
@@ -56,7 +56,7 @@ impl From<TradeBotErrors> for ProgramError {
 }
 
 impl From<ProgramError> for TradeBotErrors {
-    fn from(err: ProgramError) -> Self {
+    fn from(_err: ProgramError) -> Self {
         TradeBotErrors::ProgramErr
 
     }

@@ -1,13 +1,8 @@
-use std::error::Error;
 
-use anchor_lang::__private::bytemuck::{Pod, Zeroable};
-use serum_dex::critbit::Slab;
-use serum_dex::matching::Side;
 
 use {
     borsh::{BorshDeserialize, BorshSerialize},
     solana_program::{
-        account_info::AccountInfo,
         msg,
         program_error::ProgramError,
         program_pack::{IsInitialized, Pack, Sealed},
@@ -15,8 +10,6 @@ use {
     },
 };
 
-use crate::error::TradeBotResult;
-use crate::instruction::MarketStatus;
 
 
 

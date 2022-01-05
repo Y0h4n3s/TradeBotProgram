@@ -57,6 +57,8 @@ const BN = require("bn.js");
     console.log("baseBalance:", decodedTrader.baseBalance.toNumber())
     console.log("quoteBalance:", decodedTrader.quoteBalance.toNumber())
     console.log("totalTxs:", decodedTrader.totalTxs.toNumber())
+    console.log("startingPriceBuy:", decodedTrader.startingPriceBuy.toNumber())
+    console.log("startingPriceSell:", decodedTrader.startingPriceSell.toNumber())
     console.log("startingBase:", decodedTrader.startingBaseBalance.toNumber())
     console.log("startingQuote:", decodedTrader.startingQuoteBalance.toNumber())
     console.log(OpenOrders.getLayout(serumProgramId).span, OpenOrders.getLayout(serumProgramId).offsetOf("owner"))

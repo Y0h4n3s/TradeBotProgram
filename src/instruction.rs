@@ -4,7 +4,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::msg;
 use solana_program::pubkey::Pubkey;
 
-use crate::error::{TradeBotError, TradeBotErrors, TradeBotResult};
+use crate::error::{TradeBotErrors, TradeBotResult};
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
 pub enum MarketStatus {
@@ -93,6 +93,7 @@ pub trait TradeBotInstruction<T: AnchorSerialize + AnchorDeserialize  + Debug > 
                 Ok(Box::new(ix))
             }
             Err(e) => {
+                msg!("{:?}", e);
                 Err(TradeBotErrors::InvalidInstruction)
             }
         }
@@ -103,6 +104,7 @@ pub trait TradeBotInstruction<T: AnchorSerialize + AnchorDeserialize  + Debug > 
                 Ok(packed)
             }
             Err(e) => {
+                msg!("{:?}", e);
                 Err(TradeBotErrors::InvalidInstruction)
             }
         }
@@ -112,111 +114,10 @@ pub trait TradeBotInstruction<T: AnchorSerialize + AnchorDeserialize  + Debug > 
 
 
 
-impl TradeBotInstruction<Self> for CleanUp{
-
-}
-
-impl TradeBotInstruction<Self> for RegisterTrader{
-
-}
-impl TradeBotInstruction<Self> for Trade{
-
-}
-
-impl TradeBotInstruction<Self> for DecommissionTrader{
-
-}
-
-impl TradeBotInstruction<Self> for Settle{
-
-}
-impl TradeBotInstruction<Self> for UpdateTrader{
-
-}
-impl TradeBotInstruction<Self> for Deposit{
-
-}
-
-
-// impl TradeBotInstruction for CloseTradeMarket {
-//     fn unpack(data: &[u8]) -> TradeBotResult<Box<Self>> {
-//         match CloseTradeMarket::try_from_slice(data) {
-//             Ok(ix) => {
-//                 msg!("{:?}", ix);
-//                 Ok(Box::new(ix))
-//             }
-//             Err(e) => {
-//                 Err(TradeBotError::Errors(TradeBotErrors::InvalidInstruction))
-//             }
-//         }
-//     }
-// }
-//
-// impl TradeBotInstruction for Trade {
-//     fn unpack(data: &[u8]) -> TradeBotResult<Box<Self>> {
-//         match Trade::try_from_slice(data) {
-//             Ok(ix) => {
-//                 msg!("{:?}", ix);
-//                 Ok(Box::new(ix))
-//             }
-//             Err(e) => {
-//                 Err(TradeBotError::Errors(TradeBotErrors::InvalidInstruction))
-//             }
-//         }
-//     }
-// }
-//
-// impl TradeBotInstruction for InitializeTrader {
-//     fn unpack(data: &[u8]) -> TradeBotResult<Box<Self>> {
-//         match InitializeTrader::try_from_slice(data) {
-//             Ok(ix) => {
-//                 msg!("{:?}", ix);
-//                 Ok(Box::new(ix))
-//             }
-//             Err(e) => {
-//                 Err(TradeBotError::Errors(TradeBotErrors::InvalidInstruction))
-//             }
-//         }
-//     }
-// }impl TradeBotInstruction for CloseTradeMarket {
-//     fn unpack(data: &[u8]) -> TradeBotResult<Box<Self>> {
-//         match CloseTradeMarket::try_from_slice(data) {
-//             Ok(ix) => {
-//                 msg!("{:?}", ix);
-//                 Ok(Box::new(ix))
-//             }
-//             Err(e) => {
-//                 Err(TradeBotError::Errors(TradeBotErrors::InvalidInstruction))
-//             }
-//         }
-//     }
-// }
-//
-// impl TradeBotInstruction for Trade {
-//     fn unpack(data: &[u8]) -> TradeBotResult<Box<Self>> {
-//         match Trade::try_from_slice(data) {
-//             Ok(ix) => {
-//                 msg!("{:?}", ix);
-//                 Ok(Box::new(ix))
-//             }
-//             Err(e) => {
-//                 Err(TradeBotError::Errors(TradeBotErrors::InvalidInstruction))
-//             }
-//         }
-//     }
-// }
-//
-// impl TradeBotInstruction for InitializeTrader {
-//     fn unpack(data: &[u8]) -> TradeBotResult<Box<Self>> {
-//         match InitializeTrader::try_from_slice(data) {
-//             Ok(ix) => {
-//                 msg!("{:?}", ix);
-//                 Ok(Box::new(ix))
-//             }
-//             Err(e) => {
-//                 Err(TradeBotError::Errors(TradeBotErrors::InvalidInstruction))
-//             }
-//         }
-//     }
-// }
-
+impl TradeBotInstruction<Self> for CleanUp{}
+impl TradeBotInstruction<Self> for RegisterTrader{}
+impl TradeBotInstruction<Self> for Trade{}
+impl TradeBotInstruction<Self> for DecommissionTrader{}
+impl TradeBotInstruction<Self> for Settle{}
+impl TradeBotInstruction<Self> for UpdateTrader{}
+impl TradeBotInstruction<Self> for Deposit{}
