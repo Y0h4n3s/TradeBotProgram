@@ -67,6 +67,8 @@ const BN = require("bn.js");
     const asks = await market.loadAsks(connection)// Retrieving fills
     const fills = await market.loadFills(connection);
     const serumOpenOrders = await OpenOrders.load(connection, decodedTrader.serumOpenOrders, serumProgramId)
+    console.log("totalBaseBalanceLocked:", serumOpenOrders.baseTokenTotal.toNumber())
+    console.log("totalQuoteBalanceLocked:", serumOpenOrders.quoteTokenTotal.toNumber())
     const openOrders =  market.filterForOpenOrders(bids, asks, [serumOpenOrders])
     for (let order of openOrders) {
         console.log(order.size, order.price, order.clientId.toNumber(), order.feeTier)

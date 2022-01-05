@@ -508,6 +508,8 @@ impl Processor {
         let accounts_iter = &mut accounts.iter();
         let base_market_wallet_account = next_account_info(accounts_iter).unwrap();
         let quote_market_wallet_account = next_account_info(accounts_iter).unwrap();
+        let base_mint_account = next_account_info(accounts_iter).unwrap();
+        let quote_mint_account = next_account_info(accounts_iter).unwrap();
         let trader_signer_account = next_account_info(accounts_iter).unwrap();
         let serum_market_account = next_account_info(accounts_iter).unwrap();
         let request_queue_account = next_account_info(accounts_iter).unwrap();
@@ -543,6 +545,9 @@ impl Processor {
         )
         .unwrap();
 
+        let base_mint = spl_token::state::Mint::unpack(&mut base_mint_account.try_borrow_mut_data().unwrap()).unwrap();
+        let quote_mint = spl_token::state::Mint::unpack(&mut quote_mint_account.try_borrow_mut_data().unwrap()).unwrap();
+
         let serum_market =
             serum_dex::state::Market::load(serum_market_account, serum_program_account.key, true)
                 .unwrap();
@@ -560,38 +565,27 @@ impl Processor {
         let buy_price = all_bids.get(0).unwrap().price;
         let sell_price = all_asks.get(0).unwrap().price;
         let market_price = (buy_price + sell_price) / 2;
-        let profit_as_base = trader.min_trade_profit / market_price;
         let base_size = trader.base_balance
             / (trader.simultaneous_open_positions - trader.open_order_pairs * 2);
 
-        let quote_size = base_size * market_price;
-
-        let mut order_buy_price = (quote_size
-            / (base_size + (profit_as_base / 2) + (0.0022_f64 * base_size as f64) as u64));
-        let mut order_sell_price =
-            (((0.0022_f64 * quote_size as f64) as u64) + quote_size + trader.min_trade_profit / 2)
-                / base_size;
-
-        if order_buy_price == order_sell_price {
-            order_buy_price = order_sell_price - 1;
-            order_sell_price = order_sell_price + 1;
-        }
-        msg!(
-            "{:?} {:?} {:?}",
-            base_account,
-            quote_account,
-            order_sell_price
-        );
-        msg!("{:?} {:?} {:?}", order_buy_price, base_size, quote_size);
+        let tick_value = Self::price_number_to_lots(&serum_market, ((serum_market.pc_lot_size as f64 * base_size as f64 * market_price as f64) / 10_u64.pow(quote_mint.decimals as u32) as f64), &base_mint, &quote_mint);
 
         let base_size_lots = base_size / serum_market.coin_lot_size;
+
+        let ticks_required = trader.min_trade_profit / serum_market.pc_lot_size / base_size_lots;
+
+
+
+
+        if ticks_required <= 1 {
+            return Err(TradeBotErrors::ProfitTooLow)
+        }
+
+        let order_buy_price = market_price - ticks_required / 2;
+        let order_sell_price = market_price + ticks_required / 2;
+
+
         let quote_size_lots = base_size_lots * serum_market.pc_lot_size * order_buy_price;
-        msg!(
-            "{:?} {:?} {:?}",
-            order_buy_price,
-            base_size_lots,
-            quote_size_lots
-        );
 
         if base_account.amount <= base_size || quote_account.amount <= quote_size_lots {
             return Err(TradeBotErrors::InsufficientTokens);
@@ -619,7 +613,6 @@ impl Processor {
             }
         });
 
-        msg!("{:?} {:?}", all_bids, all_asks);
 
         for open_price in open_prices {
             if open_price >= order_buy_price && open_price <= order_sell_price {
@@ -920,7 +913,8 @@ impl Processor {
         let sell_price = all_asks.get(0).unwrap().price;
         let market_price = (buy_price + sell_price) / 2;
 
-        msg!("{} {}", (base_trader_wallet_account.amount + open_orders.native_coin_total), (open_orders.native_pc_total + quote_trader_wallet_account.amount));
+        msg!("{} {} {}", (base_trader_wallet_account.amount + open_orders.native_coin_total), (open_orders.native_pc_total + quote_trader_wallet_account.amount), trader.min_trade_profit);
+        msg!("{} {} ", serum_market.coin_lot_size, serum_market.pc_lot_size);
         trader.base_balance = base_trader_wallet_account.amount;
         trader.quote_balance = quote_trader_wallet_account.amount;
         trader.value = ((((base_trader_wallet_account.amount + open_orders.native_coin_total)

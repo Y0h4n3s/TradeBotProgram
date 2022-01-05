@@ -36,6 +36,8 @@ pub enum TradeBotErrors {
     PriceAlreadyTraded,
     #[error("Price is lower than stop loss price")]
     StopLossLimit = 10,
+    #[error("Price value is set too low to place a valid trade")]
+    ProfitTooLow,
     #[error("Program Error")]
     ProgramErr,
     #[error("Unknown error")]

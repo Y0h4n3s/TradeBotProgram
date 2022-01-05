@@ -22,11 +22,11 @@ const BN = require("bn.js");
    // let payer = await initializeLocalPayer(connection);
     let tokenProgramId = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
     let serumProgramId = new PublicKey("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin")
-    let marketAddress = new PublicKey("J4oPt5Q3FYxrznkXLkbosAWrJ4rZLqJpGqz7vZUL4eMM")
+    let marketAddress = new PublicKey("9wFFyRfZBsuAha4YcuxcXLKwMxJR43S7fPfQLusDBzvT")
     let signer = new Keypair()
 
     let market = await Market.load(connection, marketAddress, {}, serumProgramId)
-
-    console.log(market.decoded.baseLotSize.toNumber(), market.decoded.quoteLotSize.toNumber())
+    console.log(market._quoteSplTokenMultiplier.toNumber(), market._quoteSplTokenMultiplier.toNumber())
+    console.log(market.decoded.baseLotSize.toNumber(), market.decoded.quoteLotSize.toNumber(), market._quoteSplTokenDecimals, market._baseSplTokenDecimals)
 
 })()

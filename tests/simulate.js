@@ -90,4 +90,13 @@ function simulateForTrades(trades) {
     console.log("\n\n")
 
 }
-simulateForTrades(sideways)
+
+
+function simulatePrices(marketPrice, tradeProfit, quoteLotSize, baseLotSize, baseSizeLots) {
+    profitLots = (tradeProfit / marketPrice) / quoteLotSize
+    let priceGap =  (baseLotSize / quoteLotSize) * Math.exp((((-1/baseSizeLots)/marketPrice)*tradeProfit*(Math.log(baseLotSize))))
+    const buyPrice = marketPrice - priceGap
+    const sellPrice = marketPrice + priceGap
+    console.log(priceGap, buyPrice, sellPrice, profitLots)
+}
+simulatePrices(185000, 50000, 100, 100000000, 678571428)
