@@ -18,40 +18,6 @@ use {
 use crate::error::TradeBotResult;
 use crate::instruction::MarketStatus;
 
-pub const TRADE_MARKET_STATE_SPAN: u64 = 129;
-#[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
-pub struct TradeMarketState {
-    pub serum_market_address: Pubkey,
-    pub base_mint: Pubkey,
-    pub quote_mint: Pubkey,
-    pub owner: Pubkey,
-    pub status: MarketStatus,
-}
-
-
-impl Sealed for TradeMarketState {}
-
-impl Pack for TradeMarketState {
-    const LEN: usize = 129;
-    fn pack_into_slice(&self, dst: &mut [u8]) {
-        let mut slice = dst;
-        self.serialize(&mut slice).unwrap()
-    }
-
-    fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
-        let mut p = src;
-        TradeMarketState::deserialize(&mut p).map_err(|_| {
-            msg!("Failed to deserialize name record");
-            ProgramError::InvalidAccountData
-        })
-    }
-}
-
-impl IsInitialized for TradeMarketState {
-    fn is_initialized(&self) -> bool {
-        self.status != MarketStatus::UnInitialized
-    }
-}
 
 
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
@@ -69,7 +35,6 @@ pub struct TraderState {
     pub quote_trader_wallet: Pubkey,
     pub serum_open_orders: Pubkey,
     pub trader_signer: Pubkey,
-    pub market_state: Pubkey,
     pub owner: Pubkey,
     pub min_trade_profit: u64,
     pub stopping_price: u64,
@@ -78,6 +43,10 @@ pub struct TraderState {
     pub simultaneous_open_positions: u64,
     pub starting_base_balance: u64,
     pub starting_quote_balance: u64,
+    pub deposited_base_balance: u64,
+    pub deposited_quote_balance: u64,
+    pub withdrawn_base_balance: u64,
+    pub withdrawn_quote_balance: u64,
     pub starting_value: u64,
     pub base_balance: u64,
     pub quote_balance: u64,
@@ -86,17 +55,17 @@ pub struct TraderState {
     pub total_txs: u64,
     pub register_date: u64,
     pub status: TraderStatus,
-    pub _padding: [u64; 16]
+    pub _padding: [u64; 17]
 }
 
-pub const TRADER_SPAN: u64 = 465;
+pub const TRADER_SPAN: u64 = 473;
 
 
 
 impl Sealed for TraderState {}
 
 impl Pack for TraderState {
-    const LEN: usize = 465;
+    const LEN: usize = 473;
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
         self.serialize(&mut slice).unwrap()

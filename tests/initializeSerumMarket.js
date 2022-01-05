@@ -62,11 +62,11 @@ async function signTransactions({
     let tokenProgramId = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
     let serumProgramId = new PublicKey("73A1rYyFwTpRzEsGjJc1P45ee7qMo8vXuMZUDC42Wzwe")
 
-    let baseLotSize = 1000
+    let baseLotSize = 100000000
     let quoteLotSize = 100
     let feeRateBps = 0
     let baseMint = new PublicKey("EdnAnrrvnS42MZNrj4wpDqE6XAJMg3sADPEcqgyAzJ9H")
-    let quoteMint = new PublicKey("J4TYCGMWfEUJCg3PmYn6KTjksai6cv45JP3AitYxpRY5")
+    let quoteMint = new PublicKey("FepzwZGPorzLXnvCQAhnHWC53UBz7SCQcvw7FQmbPJRg")
     let payerBaseTokenAccount = new PublicKey('CEzHF6839TYwH4KcQgS77GfyfJdkHVBDgBxgYg9SEH64')
     let payerQuoteTokenAccount = new PublicKey('FpGxUvLJtwu9XKkfYXNMJeUzJ9KgLmDmEEXk9JXVkEkG')
     const market = new Account();

@@ -23,7 +23,7 @@ const BN = require("bn.js");
     let tx = new Transaction()
     let tokenProgramId = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
     let serumProgramId = new PublicKey("73A1rYyFwTpRzEsGjJc1P45ee7qMo8vXuMZUDC42Wzwe")
-    let marketAddress = new PublicKey("HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa")
+    let marketAddress = new PublicKey("7V5TrUp3wQp4hwNiQMMR4KEG98y4LTvDxXLNU64PnjbN")
     let signer = new Keypair()
 
     let traders = await connection.getProgramAccounts(programId, {
@@ -31,7 +31,7 @@ const BN = require("bn.js");
             {dataSize: Trader.span},
             {
                 memcmp: {
-                    offset: 0, bytes: "HuXUgd1E9bV1Dh9u1djgGcNybDK4q4Hp5nHtZ16VQdpa"
+                    offset: 0, bytes: "7V5TrUp3wQp4hwNiQMMR4KEG98y4LTvDxXLNU64PnjbN"
                 }
             },
             {
@@ -51,11 +51,14 @@ const BN = require("bn.js");
     let decodedTrader = Trader.decode(trader.account.data, 0)
     console.log("baseMarketWallet:", decodedTrader.baseMarketWallet.toBase58())
     console.log("quoteMarketWallet:", decodedTrader.quoteMarketWallet.toBase58())
+    console.log("serumOpenOrders:", decodedTrader.serumOpenOrders.toBase58())
     console.log("traderSigner:", decodedTrader.marketSigner.toBase58())
     console.log("openOrderPairs:", decodedTrader.openOrderPairs.toNumber())
     console.log("baseBalance:", decodedTrader.baseBalance.toNumber())
     console.log("quoteBalance:", decodedTrader.quoteBalance.toNumber())
     console.log("totalTxs:", decodedTrader.totalTxs.toNumber())
+    console.log("startingBase:", decodedTrader.startingBaseBalance.toNumber())
+    console.log("startingQuote:", decodedTrader.startingQuoteBalance.toNumber())
     console.log(OpenOrders.getLayout(serumProgramId).span, OpenOrders.getLayout(serumProgramId).offsetOf("owner"))
     let market = await Market.load(connection, decodedTrader.marketAddress, undefined, serumProgramId)
     console.log("\nMarketBaseVault:", market.decoded.baseVault.toBase58())
@@ -63,6 +66,11 @@ const BN = require("bn.js");
     const bids = await market.loadBids(connection)
     const asks = await market.loadAsks(connection)// Retrieving fills
     const fills = await market.loadFills(connection);
+    const serumOpenOrders = await OpenOrders.load(connection, decodedTrader.serumOpenOrders, serumProgramId)
+    const openOrders =  market.filterForOpenOrders(bids, asks, [serumOpenOrders])
+    for (let order of openOrders) {
+        console.log(order.size, order.price, order.clientId.toNumber(), order.feeTier)
+    }
 
     let events = await market.loadEventQueue(connection)
     console.log(events.length)

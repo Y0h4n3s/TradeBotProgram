@@ -47,6 +47,13 @@ pub struct UpdateTrader {
     pub _padding: [u8; 65]
 }
 
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
+pub struct Deposit {
+    pub base_amount: u64,
+    pub quote_amount: u64,
+    pub _padding: [u64; 7]
+}
+
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct DecommissionTrader {
@@ -105,9 +112,6 @@ pub trait TradeBotInstruction<T: AnchorSerialize + AnchorDeserialize  + Debug > 
 
 
 
-impl TradeBotInstruction<Self> for InitializeTradeMarket{
-
-}
 impl TradeBotInstruction<Self> for CleanUp{
 
 }
@@ -119,11 +123,6 @@ impl TradeBotInstruction<Self> for Trade{
 
 }
 
-impl TradeBotInstruction<Self> for CloseTradeMarket{
-
-}
-
-
 impl TradeBotInstruction<Self> for DecommissionTrader{
 
 }
@@ -134,6 +133,11 @@ impl TradeBotInstruction<Self> for Settle{
 impl TradeBotInstruction<Self> for UpdateTrader{
 
 }
+impl TradeBotInstruction<Self> for Deposit{
+
+}
+
+
 // impl TradeBotInstruction for CloseTradeMarket {
 //     fn unpack(data: &[u8]) -> TradeBotResult<Box<Self>> {
 //         match CloseTradeMarket::try_from_slice(data) {

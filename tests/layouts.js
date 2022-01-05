@@ -139,7 +139,6 @@ const Trader = bufferLayout.struct([
     new PublicKeyLayout("quoteMarketWallet"),
     new PublicKeyLayout("serumOpenOrders"),
     new PublicKeyLayout("marketSigner"),
-    new PublicKeyLayout("marketState"),
     new PublicKeyLayout("owner"),
     new U64("tradeProfit"),
     new U64("stoppingPrice"),
@@ -148,6 +147,10 @@ const Trader = bufferLayout.struct([
     new U64("simultaneousOpenPositions"),
     new U64("startingBaseBalance"),
     new U64("startingQuoteBalance"),
+    new U64("depositedBaseBalance"),
+    new U64("depositedQuoteBalance"),
+    new U64("withdrawnBaseBalance"),
+    new U64("withdrawnQuoteBalance"),
     new U64("startingValue"),
     new U64("baseBalance"),
     new U64("quoteBalance"),
@@ -156,7 +159,7 @@ const Trader = bufferLayout.struct([
     new U64("totalTxs"),
     new U64("registerDate"),
     bufferLayout.u8("status"),
-    bufferLayout.blob(128, "_padding")
+    bufferLayout.blob(136, "_padding")
 ])
 
 module.exports = {TradeMarketState, CloseTradeMarket, InitializeTrader, RegisterTrader, Trader, Trade, UpdateTrader}
