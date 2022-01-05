@@ -508,8 +508,6 @@ impl Processor {
         let accounts_iter = &mut accounts.iter();
         let base_market_wallet_account = next_account_info(accounts_iter).unwrap();
         let quote_market_wallet_account = next_account_info(accounts_iter).unwrap();
-        let base_mint_account = next_account_info(accounts_iter).unwrap();
-        let quote_mint_account = next_account_info(accounts_iter).unwrap();
         let trader_signer_account = next_account_info(accounts_iter).unwrap();
         let serum_market_account = next_account_info(accounts_iter).unwrap();
         let request_queue_account = next_account_info(accounts_iter).unwrap();
@@ -544,10 +542,6 @@ impl Processor {
             &quote_market_wallet_account.try_borrow_data().unwrap(),
         )
         .unwrap();
-
-        let base_mint = spl_token::state::Mint::unpack(&mut base_mint_account.try_borrow_mut_data().unwrap()).unwrap();
-        let quote_mint = spl_token::state::Mint::unpack(&mut quote_mint_account.try_borrow_mut_data().unwrap()).unwrap();
-
         let serum_market =
             serum_dex::state::Market::load(serum_market_account, serum_program_account.key, true)
                 .unwrap();
@@ -565,10 +559,12 @@ impl Processor {
         let buy_price = all_bids.get(0).unwrap().price;
         let sell_price = all_asks.get(0).unwrap().price;
         let market_price = (buy_price + sell_price) / 2;
+
+        if (trader.simultaneous_open_positions - trader.open_order_pairs * 2) <= 0 {
+            return Err(TradeBotErrors::ExceededOpenOrdersLimit);
+        }
         let base_size = trader.base_balance
             / (trader.simultaneous_open_positions - trader.open_order_pairs * 2);
-
-        let tick_value = Self::price_number_to_lots(&serum_market, ((serum_market.pc_lot_size as f64 * base_size as f64 * market_price as f64) / 10_u64.pow(quote_mint.decimals as u32) as f64), &base_mint, &quote_mint);
 
         let base_size_lots = base_size / serum_market.coin_lot_size;
 
@@ -589,10 +585,6 @@ impl Processor {
 
         if base_account.amount <= base_size || quote_account.amount <= quote_size_lots {
             return Err(TradeBotErrors::InsufficientTokens);
-        }
-
-        if trader.open_order_pairs >= trader.simultaneous_open_positions / 2 {
-            return Err(TradeBotErrors::ExceededOpenOrdersLimit);
         }
 
         if trader.stopping_price >= buy_price || trader.stopping_price >= sell_price {
