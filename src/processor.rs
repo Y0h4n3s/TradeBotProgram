@@ -16,7 +16,7 @@ use std::num::NonZeroU64;
 use crate::error::{ TradeBotErrors, TradeBotResult};
 use crate::instruction::{
     CleanUp, DecommissionTrader, Deposit,
-    RegisterTrader, Settle, Trade, TradeBotInstruction, UpdateTrader,
+    RegisterTrader, Settle, Trade, TradeBotInstruction, UpdateTrader,Sync
 };
 use crate::state::{TraderState, TraderStatus};
 
@@ -28,7 +28,6 @@ impl Processor {
         accounts: &[AccountInfo],
         data: &[u8],
     ) -> TradeBotResult<()> {
-        msg!("{}", data.len());
         match data.len() {
             128 => {
                 let ix = Trade::unpack(data).unwrap();
@@ -36,7 +35,6 @@ impl Processor {
             }
             96 => {
                 let ix = RegisterTrader::unpack(data).unwrap();
-                msg!("decoded_ix");
                 Self::process_register_trader(program_id, accounts, ix.as_ref())
             }
             56 => {
@@ -54,6 +52,10 @@ impl Processor {
             89 => {
                 let ix = UpdateTrader::unpack(data).unwrap();
                 Self::process_update_trader(program_id, accounts, ix.as_ref())
+            }
+            152 => {
+                let ix = Sync::unpack(data).unwrap();
+                Self::process_sync(program_id, accounts, ix.as_ref())
             }
             160 => {
                 let ix = CleanUp::unpack(data).unwrap();
@@ -202,7 +204,6 @@ impl Processor {
             &mut trader_account.try_borrow_mut_data().unwrap(),
         )
         .unwrap();
-        msg!("Registered Trader {:?}", trader);
         Ok(())
     }
 
@@ -549,13 +550,15 @@ impl Processor {
         let sell_price = all_asks.get(0).unwrap().price;
         let market_price = (buy_price + sell_price) / 2;
 
-        msg!("{}", Self::even(trader.simultaneous_open_positions - trader.open_order_pairs * 2));
         if Self::even(trader.simultaneous_open_positions - trader.open_order_pairs * 2) <= 1 {
             return Err(TradeBotErrors::ExceededOpenOrdersLimit);
         }
-        let base_size = trader.base_balance
+        let base_size_sold = trader.base_balance
             / Self::even(trader.simultaneous_open_positions - trader.open_order_pairs * 2);
-
+        let quote_size_sold = ((trader.quote_balance / market_price) * serum_market.coin_lot_size / serum_market.pc_lot_size)
+            / Self::even(trader.simultaneous_open_positions - trader.open_order_pairs * 2);
+        msg!("{} {}", base_size_sold, quote_size_sold);
+        let base_size = min(base_size_sold, quote_size_sold);
         let base_size_lots = base_size / serum_market.coin_lot_size;
 
         let ticks_required = trader.min_trade_profit / serum_market.pc_lot_size / base_size_lots;
@@ -774,14 +777,16 @@ impl Processor {
         )
         .unwrap();
 
-        trader.base_balance -= base_size;
-        trader.quote_balance -= quote_size_lots;
+        trader.base_balance = if base_size >= trader.base_balance {0} else {trader.base_balance - base_size};
+        trader.quote_balance = if quote_size_lots >= trader.quote_balance {0} else {trader.quote_balance - quote_size_lots};
         trader.open_order_pairs += 1;
         trader.total_txs += 2;
         trader.status = TraderStatus::Initialized;
         TraderState::pack(trader, &mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
         Ok(())
     }
+
+
 
     pub fn process_settle(
         program_id: &Pubkey,
@@ -792,8 +797,6 @@ impl Processor {
         let trader_account = next_account_info(accounts_iter).unwrap();
         let serum_market_account = next_account_info(accounts_iter).unwrap();
         let serum_open_orders_account = next_account_info(accounts_iter).unwrap();
-        let bids_account = next_account_info(accounts_iter).unwrap();
-        let asks_account = next_account_info(accounts_iter).unwrap();
         let trader_signer_account = next_account_info(accounts_iter).unwrap();
         let coin_vault_account = next_account_info(accounts_iter).unwrap();
         let pc_vault_account = next_account_info(accounts_iter).unwrap();
@@ -802,17 +805,12 @@ impl Processor {
         let vault_signer_account = next_account_info(accounts_iter).unwrap();
         let serum_program_account = next_account_info(accounts_iter).unwrap();
         let token_program_account = next_account_info(accounts_iter).unwrap();
-        let mut trader =
+        let trader =
             TraderState::unpack(&mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
         let market_account_seed =
             Self::calculate_seed_for_owner_and_market(&trader.market_address, &trader.owner);
-        let (pda, nonce) =
+        let (_pda, nonce) =
             Pubkey::find_program_address(&[market_account_seed.as_slice()], program_id);
-        if pda.to_string() != trader_signer_account.key.to_string() {
-            return Err(TradeBotErrors::Unauthorized);
-        }
-
-        let serum_open_order_as = serum_open_orders_account.key.clone().to_aligned_bytes();
 
         let data = MarketInstruction::SettleFunds.pack();
         let accounts1: Vec<AccountMeta> = vec![
@@ -833,27 +831,56 @@ impl Processor {
             data,
         };
 
+        invoke_signed(
+            &ix,
+            accounts,
+            &[&[market_account_seed.as_slice(), &[nonce]]],
+        )
+        .unwrap();
+
+        TraderState::pack(trader, &mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
+        Ok(())
+    }
+    pub fn process_sync(
+        _program_id: &Pubkey,
+        accounts: &[AccountInfo],
+        _ix: &Sync,
+    ) -> TradeBotResult<()> {
+        let accounts_iter = &mut accounts.iter();
+        let trader_account = next_account_info(accounts_iter).unwrap();
+        let serum_market_account = next_account_info(accounts_iter).unwrap();
+        let serum_open_orders_account = next_account_info(accounts_iter).unwrap();
+        let bids_account = next_account_info(accounts_iter).unwrap();
+        let asks_account = next_account_info(accounts_iter).unwrap();
+        let trader_signer_account = next_account_info(accounts_iter).unwrap();
+        let base_trader_wallet_account = next_account_info(accounts_iter).unwrap();
+        let quote_trader_wallet_account = next_account_info(accounts_iter).unwrap();
+        let serum_program_account = next_account_info(accounts_iter).unwrap();
+        let mut trader =
+            TraderState::unpack(&mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
+        let serum_open_order_as = serum_open_orders_account.key.clone().to_aligned_bytes();
+
+
         let serum_market =
             serum_dex::state::Market::load(serum_market_account, serum_program_account.key, true)
                 .unwrap();
+
+        let all_asks = serum_market
+            .load_asks_mut(asks_account)
+            .unwrap();
+        let mut all_ask_orders = Self::parse_order_book(
+            Side::Ask,
+            all_asks.deref().clone(),
+        );
+        let all_bids = serum_market
+            .load_bids_mut(bids_account)
+            .unwrap();
         let bids = Self::parse_order_book_for_owner(
             Side::Bid,
-            serum_market
-                .load_bids_mut(bids_account)
-                .unwrap()
-                .deref()
-                .clone(),
+            all_bids.deref().clone(),
             &serum_open_order_as,
         );
-        let asks = Self::parse_order_book_for_owner(
-            Side::Ask,
-            serum_market
-                .load_asks_mut(asks_account)
-                .unwrap()
-                .deref()
-                .clone(),
-            &serum_open_order_as,
-        );
+        let asks: Vec<Order> = all_ask_orders.clone().into_iter().filter(|or | or.owner == serum_open_order_as).collect();
         let open_orders = serum_market
             .load_orders_mut(
                 serum_open_orders_account,
@@ -871,46 +898,20 @@ impl Processor {
             &mut quote_trader_wallet_account.try_borrow_mut_data().unwrap(),
         )
         .unwrap();
-        let mut all_bids = Self::parse_order_book(
-            Side::Bid,
-            serum_market
-                .load_bids_mut(bids_account)
-                .unwrap()
-                .deref()
-                .clone(),
-        );
-        let mut all_asks = Self::parse_order_book(
-            Side::Ask,
-            serum_market
-                .load_asks_mut(asks_account)
-                .unwrap()
-                .deref()
-                .clone(),
-        );
 
-        all_bids.sort_by_key(|order| Reverse(order.price));
-        all_asks.sort_by_key(|k| k.price);
 
-        let buy_price = all_bids.get(0).unwrap().price;
-        let sell_price = all_asks.get(0).unwrap().price;
-        let market_price = (buy_price + sell_price) / 2;
+        all_ask_orders.sort_by_key(|k| k.price);
+
+        let sell_price = all_ask_orders.get(0).unwrap().price;
 
         trader.base_balance = base_trader_wallet_account.amount;
         trader.quote_balance = quote_trader_wallet_account.amount;
         trader.value = ((((base_trader_wallet_account.amount + open_orders.native_coin_total)
             * serum_market.pc_lot_size)
             / serum_market.coin_lot_size)
-            * market_price)
+            * sell_price)
             + (open_orders.native_pc_total + quote_trader_wallet_account.amount);
         trader.open_order_pairs = max(bids.len() as u64, asks.len() as u64);
-        std::mem::drop(serum_market);
-        std::mem::drop(open_orders);
-        invoke_signed(
-            &ix,
-            accounts,
-            &[&[market_account_seed.as_slice(), &[nonce]]],
-        )
-        .unwrap();
 
         TraderState::pack(trader, &mut trader_account.try_borrow_mut_data().unwrap()).unwrap();
         Ok(())
@@ -940,21 +941,6 @@ impl Processor {
 
         return seed;
     }
-
-    // fn price_number_to_lots(
-    //     market: &Market,
-    //     price: f64,
-    //     base_mint: &Mint,
-    //     quote_mint: &Mint,
-    // ) -> u64 {
-    //     return ((price * 10_f64.powf(f64::from(quote_mint.decimals))) as u64
-    //         * market.coin_lot_size)
-    //         / (10_u64.pow(u32::from(base_mint.decimals)) * market.pc_lot_size);
-    // }
-
-    // fn base_size_number_to_lots(market: &Market, size: f64, base_mint: &Mint) -> u64 {
-    //     return (size * 10_f64.powf(f64::from(base_mint.decimals))) as u64 / market.coin_lot_size;
-    // }
 
     fn parse_order_book_for_owner(side: Side, slab: &Slab, owner: &[u64; 4]) -> Vec<Order> {
         let mut filtered: Vec<Order> = vec![];

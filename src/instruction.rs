@@ -84,6 +84,11 @@ pub struct CleanUp {
     pub _padding: [u64; 20]
 
 }
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
+pub struct Sync {
+    pub _padding: [u64; 19]
+
+}
 
 pub trait TradeBotInstruction<T: AnchorSerialize + AnchorDeserialize  + Debug > {
 
@@ -121,3 +126,4 @@ impl TradeBotInstruction<Self> for DecommissionTrader{}
 impl TradeBotInstruction<Self> for Settle{}
 impl TradeBotInstruction<Self> for UpdateTrader{}
 impl TradeBotInstruction<Self> for Deposit{}
+impl TradeBotInstruction<Self> for Sync{}
