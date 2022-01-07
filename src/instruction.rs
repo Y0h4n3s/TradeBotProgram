@@ -5,6 +5,7 @@ use solana_program::msg;
 use solana_program::pubkey::Pubkey;
 
 use crate::error::{TradeBotErrors, TradeBotResult};
+use crate::state::TraderState;
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
 pub enum MarketStatus {
@@ -71,7 +72,7 @@ pub struct CloseTradeMarket {
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct Trade {
-    pub _padding: [u8; 128]
+    pub trader: TraderState,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]

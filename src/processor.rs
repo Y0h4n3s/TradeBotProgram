@@ -29,7 +29,7 @@ impl Processor {
         data: &[u8],
     ) -> TradeBotResult<()> {
         match data.len() {
-            128 => {
+            473 => {
                 let ix = Trade::unpack(data).unwrap();
                 Self::process_trade(program_id, accounts, ix.as_ref())
             }
